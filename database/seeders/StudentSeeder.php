@@ -5,63 +5,72 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Student;
 use App\Models\Professor;
+use Illuminate\Support\Facades\DB;
 
 class StudentSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
+         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
         Student::truncate();
 
-        //on récupère les IDs des profs dans la BDD
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        // Pour Récupérer les profs
         $profs = Professor::all();
+
+        if ($profs->count() == 0) {
+            echo "Aucun professeur trouvé !\n";
+            return;
+        }
+
         
         $etudiants = [
-            // Filière TDIA:
-            ['nom' => 'ACHBAB',  'prenom' => 'MOHAMMED', 'CNE' => 'M138396464',  'filiere' => 'TDAI', 'sujet_pfe' => 'IA détection fraude bancaire'],
-            ['nom' => 'AFKIR',  'prenom' => 'Nada', 'CNE' => 'S139205332',  'filiere' => 'TDAI', 'sujet_pfe' => 'Transformation digitale PME'],
-            ['nom' => 'AGROUAZ',  'prenom' => 'Rim', 'CNE' => 'M135463515',  'filiere' => 'TDAI', 'sujet_pfe' => 'Vision par ordinateur usine'],
-            ['nom' => 'ALLALI',  'prenom' => 'Mohamed Amin', 'CNE' => 'S130003719',  'filiere' => 'TDAI', 'sujet_pfe' => 'Chatbot RH avec GPT'],
-            ['nom' => 'ASSABBAR',  'prenom' => 'Malak', 'CNE' => 'N135358665',  'filiere' => 'TDAI', 'sujet_pfe' => 'Reconnaissance vocale arabe'],
-            ['nom' => 'BADAOUI',  'prenom' => 'Soukaina', 'CNE' => 'M120081925',  'filiere' => 'TDAI', 'sujet_pfe' => 'Optimisation supply chain IA'],
-            ['nom' => 'BADRI',  'prenom' => 'Insaf', 'CNE' => 'H130186626',  'filiere' => 'TDAI', 'sujet_pfe' => 'Maintenance prédictive IoT'],
-            ['nom' => 'BOURAMTANE',  'prenom' => 'Jihane', 'CNE' => 'S130030470',  'filiere' => 'TDAI', 'sujet_pfe' => 'Deepfake detection'],
 
-            // Filière GI:
-            ['nom' => 'ABAKOUY',  'prenom' => 'Nabi', 'CNE' => 'S132170230',  'filiere' => 'GI', 'sujet_pfe' => 'Application web de gestion RH'],
-            ['nom' => 'AMINE',  'prenom' => 'Issam', 'CNE' => 'N134359792',  'filiere' => 'GI', 'sujet_pfe' => 'Système de ticketing en ligne'],
-            ['nom' => 'AMMARA',  'prenom' => 'Abderrahmane', 'CNE' => 'S134309419',  'filiere' => 'GI', 'sujet_pfe' => 'Plateforme e-learning Laravel'],
-            ['nom' => 'AOUTTAH',  'prenom' => 'Imane', 'CNE' => 'S137056359',  'filiere' => 'GI', 'sujet_pfe' => 'API REST pour mobile'],
-            ['nom' => 'AYOUB',  'prenom' => 'Mouad', 'CNE' => 'M135221806',  'filiere' => 'GI', 'sujet_pfe' => 'Application de suivi livraison'],
-            ['nom' => 'AZEROUAL',  'prenom' => 'Hicham', 'CNE' => 'M138461608',  'filiere' => 'GI', 'sujet_pfe' => 'Chatbot service client'],
-            ['nom' => 'AZMI',  'prenom' => 'Najib', 'CNE' => 'J149032373',  'filiere' => 'GI', 'sujet_pfe' => 'Gestion de bibliothèque'],
-            ['nom' => 'BEL ASSIRI',  'prenom' => 'Fatima Zohra', 'CNE' => 'S132059401',  'filiere' => 'GI', 'sujet_pfe' => 'Système de vote en ligne'],
+            // TDIA
+            ['CNE'=>'M138396464','nom'=>'ACHBAB','prenom'=>'MOHAMMED','email_perso'=>'mohammedachbab288@gmail.com','email_etu'=>'mohammed.achbab@etu.uae.ac.ma','filiere'=>'TDAI'],
+            ['CNE'=>'S139205332','nom'=>'AFKIR','prenom'=>'Nada','email_perso'=>'afkirnada088@gmail.com','email_etu'=>'nada.afkir@etu.uae.ac.ma','filiere'=>'TDAI'],
+            ['CNE'=>'M135463515','nom'=>'AGROUAZ','prenom'=>'Rim','email_perso'=>'rim.agrouaz15@gmail.com','email_etu'=>'rim.agrouaz@etu.uae.ac.ma','filiere'=>'TDAI'],
+            ['CNE'=>'S130003719','nom'=>'ALLALI','prenom'=>'Mohamed Amin','email_perso'=>'amineallali9@gmail.com','email_etu'=>'allali.mohamedamin@etu.uae.ac.ma','filiere'=>'TDAI'],
+            ['CNE'=>'N135358665','nom'=>'ASSABBAR','prenom'=>'Malak','email_perso'=>'oudmalak016@gmail.com','email_etu'=>'malak.assabbar@etu.uae.ac.ma','filiere'=>'TDAI'],
+            ['CNE'=>'M120081925','nom'=>'BADAOUI','prenom'=>'Soukaina','email_perso'=>'soukainabadaoui822@gmail.com','email_etu'=>'soukaina.badaoui@etu.uae.ac.ma','filiere'=>'TDAI'],
+            ['CNE'=>'H130186626','nom'=>'BADRI','prenom'=>'Insaf','email_perso'=>'insafbadri7@gmail.com','email_etu'=>'badri.insaf@etu.uae.ac.ma','filiere'=>'TDAI'],
 
-            // Filière DATA
-            ['nom' => 'AGHZAR',  'prenom' => 'Otmane', 'CNE' => 'N138074665',  'filiere' => 'DATA', 'sujet_pfe' => 'Analyse prédictive ventes'],
-            ['nom' => 'AKHIR',  'prenom' => 'Abir', 'CNE' => 'R139536313',  'filiere' => 'DATA', 'sujet_pfe' => 'Dashboard Power BI RH'],
-            ['nom' => 'ALAOUI MHAMDI',  'prenom' => 'Hamza', 'CNE' => 'M130497073',  'filiere' => 'DATA', 'sujet_pfe' => 'Détection anomalies réseau'],
-            ['nom' => 'ANOUK',  'prenom' => 'Zakariae', 'CNE' => 'S135236265',  'filiere' => 'DATA', 'sujet_pfe' => 'Scraping et visualisation data'],
-            ['nom' => 'ATMANI',  'prenom' => 'Oumaima', 'CNE' => 'H138058875',  'filiere' => 'DATA', 'sujet_pfe' => 'Clustering clients e-commerce'],
-            ['nom' => 'BAKADIRI',  'prenom' => 'Widad', 'CNE' => 'R130669967',  'filiere' => 'DATA', 'sujet_pfe' => 'NLP analyse sentiments'],
-            ['nom' => 'BENALI',  'prenom' => 'Kawtar', 'CNE' => 'N134354316',  'filiere' => 'DATA', 'sujet_pfe' => 'Tableau de bord COVID'],
-            ['nom' => 'BOUCHOUATA',  'prenom' => 'Hania', 'CNE' => 'G139695062',  'filiere' => 'DATA', 'sujet_pfe' => 'Recommandation films ML'],
+            // GI
+            ['CNE'=>'S132170230','nom'=>'ABAKOUY','prenom'=>'Nabil','email_perso'=>'nabilabakouy1@gmail.com','email_etu'=>'nabil.abakouy@etu.uae.ac.ma','filiere'=>'GI'],
+            ['CNE'=>'N134359792','nom'=>'AMINE','prenom'=>'ISSAM','email_perso'=>'issamamine180@gmail.com','email_etu'=>'issam.amine@etu.uae.ac.ma','filiere'=>'GI'],
+            ['CNE'=>'S134309419','nom'=>'AMMARA','prenom'=>'ABDERRAHMANE','email_perso'=>'ab.amm209@gmail.com','email_etu'=>'abderrahmane.ammara@etu.uae.ac.ma','filiere'=>'GI'],
+            ['CNE'=>'S137056359','nom'=>'AOUATTAH','prenom'=>'Imane','email_perso'=>'imaneeaouattahee@gmail.com','email_etu'=>'imane.aouattah@etu.uae.ac.ma','filiere'=>'GI'],
+            ['CNE'=>'M135221806','nom'=>'AYOUB','prenom'=>'Mouad','email_perso'=>'mouadayoubtaliwin@gmail.com','email_etu'=>'mouad.ayoub@etu.uae.ac.ma','filiere'=>'GI'],
+            ['CNE'=>'M138461608','nom'=>'AZEROUAL','prenom'=>'Hicham','email_perso'=>'hichamazroual2002@gmail.com','email_etu'=>'hicham.azeroual@etu.uae.ac.ma','filiere'=>'GI'],
+            ['CNE'=>'J149032373','nom'=>'AZMI','prenom'=>'Najib','email_perso'=>'najib.azmi2019@gmail.com','email_etu'=>'najib.azmi@etu.uae.ac.ma','filiere'=>'GI'],
+
+            //  DATA
+            ['CNE'=>'N138074665','nom'=>'AGHZAR','prenom'=>'Otmane','email_perso'=>'aghzarotmane2002@gmail.com','email_etu'=>'otmane.aghzar@etu.uae.ac.ma','filiere'=>'DATA'],
+            ['CNE'=>'R139536313','nom'=>'AKHIR','prenom'=>'Abir','email_perso'=>'abirabbb00@gmail.com','email_etu'=>'abir.akhir@etu.uae.ac.ma','filiere'=>'DATA'],
+            ['CNE'=>'M130497073','nom'=>'ALAOUI MHAMDI','prenom'=>'HAMZA','email_perso'=>'alaoui.hamza2002@gmail.com','email_etu'=>'hamza.alaouimhamdi@etu.uae.ac.ma','filiere'=>'DATA'],
+            ['CNE'=>'S135236265','nom'=>'ANOUK','prenom'=>'Zakariae','email_perso'=>'anouk845@gmail.com','email_etu'=>'anouk.zakariae@etu.uae.ac.ma','filiere'=>'DATA'],
+            ['CNE'=>'H138058875','nom'=>'ATMANI','prenom'=>'Oumaima','email_perso'=>'oumaimaamina181@gmail.com','email_etu'=>'oumaima.atmani@etu.uae.ac.ma','filiere'=>'DATA'],
+            ['CNE'=>'R130669967','nom'=>'BAKADIRI','prenom'=>'Widad','email_perso'=>'wydadbakadiri2003.top@gmail.com','email_etu'=>'widad.bakadiri@etu.uae.ac.ma','filiere'=>'DATA'],
+            ['CNE'=>'N134354316','nom'=>'BENALI','prenom'=>'Kawtar','email_perso'=>'benalikawtar1110@gmail.com','email_etu'=>'kawtar.benali@etu.uae.ac.ma','filiere'=>'DATA'],
         ];
 
-        //on a pour chaque etudiant , on assigne un encadrant
-        // olors la logique : 3 etudiant par prof (8 profs * 3 = 24 etudiants)
-        foreach($etudiants as $index => $data){
-            $profIndex = intdiv($index, 3); // 0,0,0 -> prof[0] | 1,1,1 -> prof[1] ...
+       
+        foreach ($etudiants as $index => $data) {
+
+            // Distribution équitable des encadrants
+            $profIndex = $index % $profs->count();
             $encadrant = $profs[$profIndex];
 
             Student::create([
-                'nom_complet' => $data['nom'].' '.$data['prenom'],
                 'CNE' => $data['CNE'],
-                'Filiere' => $data['filiere'],
-                'sujet_pfe' => $data['sujet_pfe'],
-                'encadrant_id' => $encadrant->id, 
+                'nom' => $data['nom'],
+                'prenom' => $data['prenom'],
+                'email_perso' => $data['email_perso'],
+                'email_etu' => $data['email_etu'],
+                'filiere' => $data['filiere'],
+                'encadrant_id' => $encadrant->id,
             ]);
         }
     }

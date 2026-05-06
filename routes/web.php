@@ -2,6 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\AffectationController;
+
+Route::get('/test-affectation', [AffectationController::class, 'generer']);
 
 Route::get('/import', [ImportController::class, 'showForm']);
 
