@@ -10,6 +10,7 @@ class Soutenance extends Model
         'student_id',
         'date_soutenance',
         'heure_debut',
+        'heure_fin',
         'salle'
     ];
     public function juries(){

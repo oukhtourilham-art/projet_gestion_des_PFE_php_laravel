@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
             $table->date('date_soutenance')->nullable();
             $table->time('heure_debut')->nullable();
+            $table->time('heure_fin')->nullable();
             $table->string('salle')->nullable();
             $table->timestamps();
         });
