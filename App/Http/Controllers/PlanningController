@@ -66,14 +66,14 @@ use  phpOffice\phpWord\PhpWord;
         $soutenance->jury_id1,
         $soutenance->jury_id2
     ];
-});
+})->filter()->unique()->values();//  ^prof   indisponibles (encadrant + jurys) pour le craineau actuel
   $profdispo = Professor::where('id','!=',$student->encadrant_id)
             ->whereNotIn('id',$profnondispo)
             ->inRandomOrder()
             ->limit(2)
             ->get();
                 if($profdispo->count() < 2){
-            continue;
+            continue; }
                     Soutenance::create([
                     "student_id"=>$student->id,
                     "date_soutenance"=>$craineaucurrent["date"],
@@ -83,4 +83,4 @@ use  phpOffice\phpWord\PhpWord;
                     "encadrant_id"=> $student->encadrant_id,
                     "jury_id1"=>$profdispo[0]->id,
                     "jury_id2"=>$profdispo[1]->id
-                    ,]);}}}}
+                    ,]);}}}
