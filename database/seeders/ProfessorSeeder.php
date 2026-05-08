@@ -33,7 +33,8 @@ class ProfessorSeeder extends Seeder
 
         foreach($professors as $prof){
             Professor::create([
-                'nom_complet' => $prof['nom'].' '.$prof['prenom'],
+                'nom' => $prof['nom'],
+                'prenom' => $prof['prenom'],
                 'departement' => $prof['departement'],
             ]);
         }

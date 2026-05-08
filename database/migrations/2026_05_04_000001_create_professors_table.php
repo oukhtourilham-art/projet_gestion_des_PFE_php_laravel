@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-     Schema::create('professors', function (Blueprint $table) {
-    $table->id();
-    $table->string('nom');
-    $table->string('prenom');
-    $table->string('departement')->nullable();
-    $table->string('email')->nullable();
-    $table->timestamps();
-});
+        Schema::create('professors', function (Blueprint $table) {
+            $table->id();
+            $table->string('nom_complet');
+            $table->string('departement')->nullable();
+            $table->string('email')->nullable();
+            $table->timestamps();
+        });
     }
 
     /**

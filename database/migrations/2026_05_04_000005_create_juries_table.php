@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('juries', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('soutenance_id')->constrained('soutenances')->cascadeOnDelete();
-            $table->foreignId('professeur_id')->constrained('professors')->cascadeOnDelete();
-            $table->string('role')->default('examinateur'); // president, examinateur, etc.
+            $table->foreignId('soutenance_id')->constrained('soutenances')->onDelete('cascade');
+            $table->foreignId('professor_id')->constrained('professors')->onDelete('cascade');
+            $table->enum('role', ['president', 'examinateur']);
             $table->timestamps();
         });
     }
