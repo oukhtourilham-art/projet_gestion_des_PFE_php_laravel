@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Professor extends Model
 {
-   protected $fillable = ['nom', 'prenom', 'departement', 'email'];
+   protected $fillable = ['nom', 'prenom', 'departement'];
 
     //Relation : un prof encadrant plusieurs etudiants 
     public function students(){

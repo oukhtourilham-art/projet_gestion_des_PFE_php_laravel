@@ -19,7 +19,7 @@ class AffectationController extends Controller
         $etudiants = Student::with('encadrant')->get();
 
         if ($etudiants->isEmpty()){
-            return repsponse()->json([
+            return response()->json([
                 'message' => 'Aucun étudiant trouvé dans la base de données'
             ]);
         }
