@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('soutenances', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
+            $table->foreignId('student_id')->constrained('students')->cascadeOnDelete(); // ici si une etudiant est supprimer la soutnance supprimer aussi 
             $table->date('date_soutenance')->nullable();
             $table->time('heure_debut')->nullable();
             $table->time('heure_fin')->nullable();

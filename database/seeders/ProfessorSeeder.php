@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+
 use Illuminate\Database\Seeder;
 use App\Models\Professor;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +18,7 @@ class ProfessorSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         // On efface d'abord les anciens profs pour éviter les doublons
         Professor::truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;'); // pur réactiver les rolations
 
         $professors = [
             ['nom' => 'ABAKOUY',  'prenom' => 'Redouan',  'departement' => 'Informatique'],
