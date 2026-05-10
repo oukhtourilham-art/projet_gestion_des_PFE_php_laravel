@@ -1,20 +1,19 @@
 <?php
 
 namespace App\Imports;
-use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use App\Models\Student;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\ToCollection;
+use App\Models\Professor;
 
-class ProfessorsImport implements ToModel, WithHeadingRow
-{ public function model(array $row)
+class ProfessorsImport implements ToCollection
+{ public function collection (Collection $rows)
    {
-    dd($row);
-    if (empty($row["nom"])) return null;
-
-   return new Student([
-    "nom"=> $row["nom"],
-    "prenom"=> $row["prenom"],
-  "filiere"=> $row["Discipline"],
+    foreach ($rows->skip(2) as $row) {
+    if (empty($row[0]))continue;
+    professor::create([
+    'nom'  => trim($row[0]),
+    'prenom'=> trim($row[1]),
+     'discipline'=> trim($row[2]),
 ]);
-}
+    }}
 }

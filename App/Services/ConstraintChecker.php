@@ -45,7 +45,7 @@ class ConstraintChecker
                 if ($s1->id >= $s2->id) continue; // pour éviter les doublons
 
                 // si on a meme salle et meme date
-                if ($s1->salle == $s2->salle && $s1->date == $s2->date) {
+                if ($s1->salle == $s2->salle && $s1->date_soutenance == $s2->date_soutenance) {
                     //pour vérifier chevauchement horaire
                     if ($s1->heure_debut < $s2->heure_fin && $s1->heure_fin > $s2->heure_debut) {
                         $erreurs[] = "Conflit salle {$s1->salle} le {$s1->date_soutenance} : soutenance {$s1->id} ({$s1->heure_debut}-{$s1->heure_fin}) chevauche soutenance {$s2->id} ({$s2->heure_debut}-{$s2->heure_fin})";

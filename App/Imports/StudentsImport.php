@@ -1,23 +1,25 @@
 <?php
-
 namespace App\Imports;
-use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
+
 use App\Models\Student;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\ToCollection;
 
-class StudentsImport implements ToModel, WithHeadingRow
-{ public function model(array $row)
-   {
-  dd($row);
-    if (empty($row["CNE"])) return null;
-    
+class StudentsImport implements ToCollection
+{  public function __construct(private string $filiere) {}
+    public function collection(Collection $rows)
+    {
+        foreach ($rows->skip(1) as $row) {
+            if (empty($row[0])) continue;
 
-   return new Student([
-    "CNE"=> $row["cne"],
-    "nom"=> $row["nom"],
-    "prenom"=> $row["prenom"],
-    "email_perso"=> $row["email_personnel"],
-    "email_etu"=> $row["email_academique"],
-]);
-}
+            Student::create([
+                'cne'         => $row[0],
+                'nom'         => $row[1],
+                'prenom'      => $row[2],
+                'email_perso' => $row[3],
+                'email_etu'   => $row[4],
+                 'filiere'     => $this->filiere,
+            ]);
+        }
+    }
 }
