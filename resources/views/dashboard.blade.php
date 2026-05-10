@@ -19,7 +19,7 @@
 <div class="container py-4">
 
     <h2 class="fw-bold mb-1">Tableau de bord — Gestion des PFEs</h2>
-    <p class="text-muted mb-4">Département Informatique · 3 filières · jury fixe à 3</p>
+    <p class="text-muted mb-4">Département Informatique </p>
 
     {{-- CARTES --}}
     <div class="row g-3 mb-4">
@@ -49,7 +49,7 @@
         <div class="col-md-7">
             <div class="card p-3">
                 <h5 class="mb-1">Participation par professeur</h5>
-                <p class="text-muted small mb-3">Étudiants encadrés · jurys assistés</p>
+                <p class="text-muted small mb-3">Étudiants encadrés · soutenances assistés comme membre de jury</p>
                 <table class="table table-sm table-striped table-hover">
                     <thead>
                         <tr>
