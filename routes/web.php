@@ -8,6 +8,8 @@ use App\Http\Controllers\DashboardController;
 
 Route::get('/test-affectation', [AffectationController::class, 'generer']);
 
+Route::get('/affecter-encadrants', [AffectationController::class, 'affecterEncadrants']);
+
 Route::get('/verifier-planning', [VerificationController::class, 'verifier']);
 
 Route::get('/import', [ImportController::class, 'showForm']);

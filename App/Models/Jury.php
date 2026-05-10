@@ -12,7 +12,7 @@ class Jury extends Model
         'role'
     ];
 
-    public function soutenace(){
+    public function soutenance(){
         return $this->belongsTo(Soutenance::class);
     }
 }

@@ -13,7 +13,7 @@ class StudentsImport implements ToCollection
             if (empty($row[0])) continue;
 
             Student::create([
-                'cne'         => $row[0],
+                'CNE'         => $row[0],
                 'nom'         => $row[1],
                 'prenom'      => $row[2],
                 'email_perso' => $row[3],

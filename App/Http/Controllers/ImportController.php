@@ -7,7 +7,7 @@
   class ImportController extends Controller{
      public function showForm() { return view('import'); }
    public function importStudents(Request $request)
-{
+  {
     $request->validate([
         'excel_file' => 'required|file|mimes:xlsx,csv',
         'filiere'    => 'required|string',

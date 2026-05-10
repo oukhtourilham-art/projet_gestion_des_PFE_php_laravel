@@ -13,6 +13,41 @@ use Illuminate\Support\Facades\DB;
 
 class AffectationController extends Controller
 {
+    public function affecterEncadrants()
+{
+    // Récupérer les étudiants sans encadrant
+    $etudiants = Student::whereNull('encadrant_id')->get();
+
+    if ($etudiants->isEmpty()) {
+        return response()->json([
+            'message' => 'Tous les étudiants ont déjà un encadrant.'
+        ]);
+    }
+
+    // Récupérer tous les professeurs
+    $profs = Professor::all();
+
+    if ($profs->isEmpty()) {
+        return response()->json([
+            'message' => 'Aucun professeur trouvé.'
+        ]);
+    }
+
+    // Distribuer équitablement
+    foreach ($etudiants as $index => $etudiant) {
+        $profIndex = $index % $profs->count();
+        $etudiant->update([
+            'encadrant_id' => $profs[$profIndex]->id
+        ]);
+    }
+
+    return response()->json([
+        'message'             => 'Encadrants affectés avec succès !',
+        'etudiants_affectés'  => $etudiants->count(),
+        'professeurs_utilisés' => $profs->count(),
+    ], 200, [], JSON_UNESCAPED_UNICODE);
+}
+
     public function generer(){
 
         //on verifier qu'il ya des etudiant dans la BDD
@@ -34,6 +69,7 @@ class AffectationController extends Controller
                     'student_id' => $etudiant->id,
                     'date_soutenance' => null,
                     'heure_debut' => null,
+                    'heure_fin' => null,
                     'salle' => null,
                 ]);
             }

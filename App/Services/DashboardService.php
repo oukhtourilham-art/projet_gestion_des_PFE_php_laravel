@@ -2,13 +2,6 @@
 
 namespace App\Services;
 
-/*
-|--------------------------------------------------------------------------
-| use = importer les classes dont on a besoin
-|--------------------------------------------------------------------------
-| Sans ces lignes, PHP ne trouve pas Professor, Student, DB
-| même s'ils existent dans le projet
-*/
 use App\Models\Professor;
 use App\Models\Student;
 use Illuminate\Support\Facades\DB;
