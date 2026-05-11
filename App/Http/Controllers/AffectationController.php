@@ -49,6 +49,20 @@ class AffectationController extends Controller
 }
 
     public function generer(){
+        
+        // verifion combien d'étudiants ont un encadrant
+        $avecEncadrant = Student::whereNotNull('encadrant_id')->count();
+        $sansEncadrant = Student::whereNull('encadrant_id')->count();
+
+        // si des étudiants n'ont pas d'encadrant 
+        if ($sansEncadrant > 0) {
+            $profs = Professor::all();
+            $etudiants = Student::whereNull('encadrant_id')->get();
+            foreach ($etudiants as $index => $etudiant) {
+                $profIndex = $index % $profs->count();
+                $etudiant->update(['encadrant_id' => $profs[$profIndex]->id]);
+            }
+        }
 
         //on verifier qu'il ya des etudiant dans la BDD
         $etudiants = Student::with('encadrant')->get();
