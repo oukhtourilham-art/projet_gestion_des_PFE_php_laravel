@@ -1,34 +1,37 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Import Data</title>
-</head>
-<body>
-<h2>Import Students</h2>
-<form action="{{ route('import.students') }}" method="POST" enctype="multipart/form-data">
-    @csrf
+@extends('layouts.app')
 
-    <input type="file" name="excel_file" required>
+@section('title', 'Importer les données')
 
-    <select name="filiere" required>
-        <option value="ID">ID</option>
-        <option value="TDIA">TDIA1</option>
-        <option value="GI">GI</option>
-    </select>
+@section('content')
 
-    <button type="submit">Import Students</button>
-</form>
-<hr>
-<h2>Import Professors</h2>
+    @if($errors->any())
+        <ul>
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    @endif
 
-<form action="{{ route('import.professors') }}" method="POST" enctype="multipart/form-data">
-    @csrf
-    <input type="file" name="excel_file" required>
-    <button type="submit">Import Professors</button>
-</form>
-@if(session('success'))
-    <p>{{ session('success') }}</p>
-@endif
+    @if(session('success'))
+        <p>{{ session('success') }}</p>
+    @endif
 
-</body>
-</html>
+    <h2>Import Étudiants</h2>
+    <form action="{{ route('import.students') }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        <label for="excel_students">Choisir un fichier Excel :</label>
+        <input type="file" id="excel_students" name="excel_file" accept=".xlsx,.xls" required>
+        <button type="submit">Importer les étudiants</button>
+    </form>
+
+    <hr>
+
+    <h2>Import Professeurs</h2>
+    <form action="{{ route('import.professors') }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        <label for="excel_professors">Choisir un fichier Excel :</label>
+        <input type="file" id="excel_professors" name="excel_file" accept=".xlsx,.xls" required>
+        <button type="submit">Importer les professeurs</button>
+    </form>
+
+@endsection

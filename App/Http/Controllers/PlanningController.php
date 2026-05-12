@@ -84,3 +84,5 @@ use  phpOffice\phpWord\PhpWord;
                     "jury_id1"=>$profdispo[0]->id,
                     "jury_id2"=>$profdispo[1]->id
                     ,]);}}}
+
+
