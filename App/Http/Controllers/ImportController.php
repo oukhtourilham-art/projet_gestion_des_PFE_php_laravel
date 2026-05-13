@@ -1,4 +1,5 @@
 <?php
+<<<<<<< Updated upstream
  namespace App\Http\Controllers;
  use Illuminate\Http\Request; 
  use Maatwebsite\Excel\Facades\Excel;
@@ -18,13 +19,19 @@
     return back()->with('success', 'Students imported successfully!');
 }
 public function importProfessors(Request $request)
+=======
+
+namespace App\Http\Controllers;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\EtudiantsImport;
+use Illuminate\Http\Request;
+
+class ImportController extends Controller
 {
-    $request->validate([
-        'excel_file' => 'required|file|mimes:xlsx,csv'
-    ]);
-
-    Excel::import(new ProfessorsImport(), $request->file("excel_file"));
-
-    return back()->with("success", "Professors imported successfully!");
+public function import(Request $request)
+>>>>>>> Stashed changes
+{
+    Excel::import(new EtudiantsImport, $request->file('excel_file'));
+    return redirect()->back()->with('success', 'Données importées avec succès !');
 }
-  }
+}
