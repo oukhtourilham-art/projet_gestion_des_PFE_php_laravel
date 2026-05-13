@@ -21,6 +21,11 @@
         @csrf
         <label for="excel_students">Choisir un fichier Excel :</label>
         <input type="file" id="excel_students" name="excel_file" accept=".xlsx,.xls" required>
+        <select name="filiere" required>
+            <option value="ID">ID</option>
+            <option value="TDIA">TDIA</option>
+            <option value="GI">GI</option>
+        </select>
         <button type="submit">Importer les étudiants</button>
     </form>
 
