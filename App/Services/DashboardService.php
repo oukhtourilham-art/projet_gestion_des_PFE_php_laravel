@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\DB;
 class DashboardService
 {
     /*
-    |==========================================================================
+    |
     | STAT 1 — Tableau combiné : encadrés + jurys par professeur
-    |==========================================================================
+    |
     |
     | On utilise une seule requête SQL avec deux LEFT JOIN pour avoir
     | en une seule fois : le nom du prof, le nb d'étudiants encadrés,
