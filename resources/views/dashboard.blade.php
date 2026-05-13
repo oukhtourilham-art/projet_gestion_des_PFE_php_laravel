@@ -1,4 +1,8 @@
 @extends('layouts.app')
+@section('title', 'Dashboard')
+
+@section('content')
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
