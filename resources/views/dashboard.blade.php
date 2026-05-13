@@ -1,4 +1,4 @@
-@extends('layouts.app')
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -56,7 +56,7 @@
                         <tr>
                             <th>Professeur</th>
                             <th class="text-center">Nb encadrés</th>
-                            <th class="text-center">Nb jurys</th>
+                            <th class="text-center">Nb Soutenances</th>
                         </tr>
                     </thead>
                     <tbody>
