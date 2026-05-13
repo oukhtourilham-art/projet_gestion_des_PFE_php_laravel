@@ -27,62 +27,98 @@ use  phpOffice\phpWord\PhpWord;
      }
  
 
-     public function generatePlanning(){
-    $students=Student::whereDoesntHave("Soutenance")->get(); //les etudiants sans soutenance
+  public function generatePlanning(){
 
+    $students = Student::whereDoesntHave("soutenance")->get(); // students sans soutenance
 
-        $timeSlots=["9:00-10:30","14:00-15:30","16:00-17:30"]; // 3 soutenances par jour
+    $timeSlots = ["9:00-10:30","14:00-15:30","16:00-17:30"]; // 3 slots
 
-        $Salles=["Amphi A","Salle 5 AB","Salle 4 AB","Salle 17 AB", //10 salles disponibles
+    $salles = [
+        "Amphi A","Salle 5 AB","Salle 4 AB","Salle 17 AB",
         "Salle 16 AB","Salle 22 AB","Salle 23 AB",
-        "Salle 24 AB","Salle 21 AB","Salle 15 AB"]; 
+        "Salle 24 AB","Salle 21 AB","Salle 15 AB"
+    ]; // salles dispo
 
-        $dateDebut=Carbon::parse(request('date')); //utilisation biblio carbon pour manipuler dates input par user
-        $dates=[ $dateDebut->copy(),
-         $dateDebut->copy()->addDay(),
-          $dateDebut->copy()->addDays(2),]; //3jours de soutenance (copy car carbon manipule les objets par reference)
+    $dateDebut = Carbon::parse(request('date')); // date input user
 
-         $craineau= []; //pour stocker toute craineau possible (date+heure+salle) pour eviter les conflits 
-          foreach($dates as $date){
+    $dates = [
+        $dateDebut->copy(),
+        $dateDebut->copy()->addDay(),
+        $dateDebut->copy()->addDays(2),
+    ]; // 3 jours
+
+    $creneaux = []; // tous les slots possibles
+    foreach($dates as $date){
         foreach($timeSlots as $time){
-            foreach($Salles as $salle){
-                $craineau[]=[
-                    "date"=>$date->toDateString(),
-                    "time"=>$time,
-                    "salle"=>$salle
+              foreach($salles as $salle){
+                $creneaux[] = [
+                    "date" => $date->toDateString(),
+                    "time" => $time,
+                    "salle" => $salle
                 ];
-            }}}
-            foreach($students as $index=> $student){
-                
-                if(empty($craineau[$index])){
-                    return back()->with("error","il n'y a pas assez de craineaux pour tous les etudiants!");
-                }
-                 $craineaucurrent=$craineau[$index];
-                 $soutenancedispo =Soutenance::where('date_soutenance', $craineaucurrent['date']) ->where('heure_debut', explode("-", $craineaucurrent['time'])[0]) ->get();
+            }
+        }
+    }
 
-                 $profnondispo=$soutenancedispo->flatMap(function($soutenance){
-    return [
-        $soutenance->encadrant_id,
-        $soutenance->jury_id1,
-        $soutenance->jury_id2
-    ];
-})->filter()->unique()->values();//  ^prof   indisponibles (encadrant + jurys) pour le craineau actuel
-  $profdispo = Professor::where('id','!=',$student->encadrant_id)
-            ->whereNotIn('id',$profnondispo)
-            ->inRandomOrder()
-            ->limit(2)
+    foreach($students as $index => $student){
+        if(!isset($creneaux[$index])){
+            return back()->with("error","Pas assez de créneaux !"); }
+        $creneau = $creneaux[$index];
+
+      [$heureDebut,$heureFin] = explode("-",$creneau['time']);
+
+        // profs occupés ce créneau
+        $soutenances = Soutenance::where('date_soutenance',$creneau['date'])
+            ->where('heure_debut',$heureDebut)
             ->get();
-                if($profdispo->count() < 2){
-            continue; }
-                    Soutenance::create([
-                    "student_id"=>$student->id,
-                    "date_soutenance"=>$craineaucurrent["date"],
-                    "heure_debut"=>explode("-",$craineaucurrent["time"])[0],
-                    "heure_fin"=>explode("-",$craineaucurrent["time"])[1],
-                    "salle"=>$craineaucurrent["salle"],
-                    "encadrant_id"=> $student->encadrant_id,
-                    "jury_id1"=>$profdispo[0]->id,
-                    "jury_id2"=>$profdispo[1]->id
-                    ,]);}}}
+        $profsOccupes = $soutenances->flatMap(function($s){
+            return [
+                $s->encadrant_id,
+                $s->jury_id1,
+                $s->jury_id2
+            ];
+        })->filter()->unique();
+        // langue etudiant
+        $langueEN = strtoupper($student->langue ?? 'FR') === "EN";
+        $queryBase = Professor::where('discipline','INFORMATIQUE')
+            ->where('id','!=',$student->encadrant_id)
+            ->whereNotIn('id',$profsOccupes);
+        if($langueEN){
+            // chercher prof anglais
+            $prof1 = (clone $queryBase)
+                ->where('$discipline','EN')
+                ->inRandomOrder()
+                ->first();
+            if(!$prof1) continue;
 
+            // 2eme prof
+            $prof2 = (clone $queryBase)
+                ->where('id','!=',$prof1->id)
+                ->inRandomOrder()
+                ->first();
+            if(!$prof2) continue;
+            $jury = collect([$prof1,$prof2]);
+        }else{
+            $jury = (clone $queryBase)
+                ->where(function($q){
+                    $q->where('langue','FR')
+                      ->orWhereNull('langue'); })
+                ->inRandomOrder()
+                ->limit(2)
+                ->get();
 
+            if($jury->count() < 2) continue;
+        }
+
+        Soutenance::create([
+            "student_id" => $student->id,
+            "date_soutenance" => $creneau["date"],
+            "heure_debut" => $heureDebut,
+            "heure_fin" => $heureFin,
+            "salle" => $creneau["salle"],
+            "encadrant_id" => $student->encadrant_id,
+            "jury_id1" => $jury[0]->id,
+            "jury_id2" => $jury[1]->id
+        ]);
+    }
+}}

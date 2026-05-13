@@ -10,22 +10,15 @@ return new class extends Migration
     {
         Schema::create('students', function (Blueprint $table) {
             $table->id();
-<<<<<<< Updated upstream
             $table->string('CNE')->unique();
 
-=======
-            $table->string('cne')->unique();
->>>>>>> Stashed changes
             $table->string('nom');
             $table->string('prenom');
             $table->string('email_perso');
             $table->string('email_etu');
-<<<<<<< Updated upstream
             $table->string('filiere')->nullable();
             $table->foreignId('encadrant_id')->nullable()->constrained('professors')->nullOnDelete();
-=======
-            $table->foreignId('encadrant_id')->nullable() ->constrained('professors') ->nullOnDelete();
->>>>>>> Stashed changes
+
             $table->timestamps();
         });
     }
