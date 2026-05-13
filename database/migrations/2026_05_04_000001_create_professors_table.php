@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nom');
             $table->string('prenom');
-            $table->string('departement')->nullable();
+            $table->string('discipline')->nullable();
             $table->timestamps();
         });
     }

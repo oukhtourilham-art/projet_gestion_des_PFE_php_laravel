@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('email_etu');
             $table->string('filiere')->nullable();
             $table->foreignId('encadrant_id')->nullable()->constrained('professors')->nullOnDelete();
+          
 
             $table->timestamps();
         });
