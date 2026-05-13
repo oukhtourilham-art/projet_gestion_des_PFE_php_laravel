@@ -1,7 +1,3 @@
-@extends('layouts.app')
-@section('title', 'Dashboard')
-
-@section('content')
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -60,7 +56,7 @@
                         <tr>
                             <th>Professeur</th>
                             <th class="text-center">Nb encadrés</th>
-                            <th class="text-center">Nb jurys</th>
+                            <th class="text-center">Nb Soutenances</th>
                         </tr>
                     </thead>
                     <tbody>
