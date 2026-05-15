@@ -18,7 +18,7 @@ class StudentsImport implements ToCollection
                 'prenom'      => $row[2],
                 'email_perso' => $row[3],
                 'email_etu'   => $row[4],
-                 'filiere'     => $this->filiere,
+                'filiere'     => $this->filiere,
             ]);
         }
     }

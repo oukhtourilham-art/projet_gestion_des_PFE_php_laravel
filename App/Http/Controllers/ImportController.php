@@ -4,11 +4,16 @@
  use Maatwebsite\Excel\Facades\Excel;
   use App\Imports\StudentsImport; 
   use App\Imports\ProfessorsImport; 
+<<<<<<< HEAD
   use App\Imports\SujetsImport;
   class ImportController extends Controller{
+=======
+
+class ImportController extends Controller{
+>>>>>>> 510ab3d (modification)
      public function showForm() { return view('import'); }
    public function importStudents(Request $request)
-  {
+    {  // ici laravel valider les donner avant traité  
     $request->validate([
         'excel_file' => 'required|file|mimes:xlsx,csv',
         'filiere'    => 'required|string',

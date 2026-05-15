@@ -1,5 +1,6 @@
 <?php
- namespace App\Http\Controllers;
+namespace App\Http\Controllers;
+
 use App\Models\Student;
 use App\Models\Affectation;
 use App\Models\Soutenance;
@@ -9,11 +10,11 @@ use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use  phpOffice\phpWord\PhpWord;
 
- class PlanningController extends Controller{
+class PlanningController extends Controller{
     public function generateAffectation(){
     Student::query()->update(['encadrant_id' => null]); //etudiants sans encadrant}
     $studentsByFiliere=Student::all()->groupBy('filiere');   //regrouper par filire
-    $profs=Professor::all()->values(); //pas necessaier de regrouper les profs par departement car on peut affecter un prof d'un departement a un etudiant d'une filiere differente
+    $profs=Professor::all()->values(); //pas necessaier de regrouper les profs par departement car on peut affecter un prof d'un departement a un etudiant d'une filiere differente, ici values() c'est pour réorganise les indixe : [0 => prof1, 1 => prof2]
     if($profs->isEmpty()){
         return back()->with("error","il y a pas des profs pour affectation!");
     } foreach($studentsByFiliere as $filiere=>$students){
