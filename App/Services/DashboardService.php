@@ -133,11 +133,11 @@ public function getAnomalies()
     $chevauchements = DB::table('soutenances as s1')
         ->join('soutenances as s2', function($join) {
             $join->on('s1.salle', '=', 's2.salle')        // même salle
-                 ->on('s1.date', '=', 's2.date')           // même jour
+                 ->on('s1.date_soutenance', '=', 's2.date_soutenance')           // même jour
                  ->on('s1.heure_debut', '=', 's2.heure_debut') // même heure
                  ->whereColumn('s1.id', '<', 's2.id');     // évite les doublons
         })
-        ->select('s1.salle', 's1.date', 's1.heure_debut')
+        ->select('s1.salle', 's1.date_soutenance', 's1.heure_debut')
         ->get();
 
     foreach ($chevauchements as $c) {
@@ -145,7 +145,7 @@ public function getAnomalies()
             'type'    => 'planning',
             'niveau'  => 'danger',
             'message' => 'Chevauchement salle ' . $c->salle
-                       . ' le ' . $c->date
+                       . ' le ' . $c->date_soutenance
                        . ' à ' . $c->heure_debut,
         ];
     }
@@ -159,9 +159,9 @@ public function getAnomalies()
         })
         ->join('soutenances as s1', 's1.id', '=', 'j1.soutenance_id')
         ->join('soutenances as s2', 's2.id', '=', 'j2.soutenance_id')
-        ->whereColumn('s1.date', '=', 's2.date')
+        ->whereColumn('s1.date_soutenance', '=', 's2.date_soutenance')
         ->whereColumn('s1.heure_debut', '=', 's2.heure_debut')
-        ->select('j1.professor_id', 's1.date', 's1.heure_debut')
+        ->select('j1.professor_id', 's1.date_soutenance', 's1.heure_debut')
         ->get();
 
     foreach ($conflits as $conf) {
@@ -172,16 +172,16 @@ public function getAnomalies()
             'type'    => 'planning',
             'niveau'  => 'danger',
             'message' => $nom . ' est dans 2 soutenances le '
-                       . $conf->date . ' à ' . $conf->heure_debut,
+                       . $conf->date_soutenance . ' à ' . $conf->heure_debut,
         ];
     }
 
     // ── ANOMALIE 4 : moins d'1h de repos entre 2 soutenances du même prof ──
     $tousJurys = DB::table('juries as j')
         ->join('soutenances as s', 's.id', '=', 'j.soutenance_id')
-        ->select('j.professor_id', 's.date', 's.heure_debut', 's.heure_fin')
+        ->select('j.professor_id', 's.date_soutenance', 's.heure_debut', 's.heure_fin')
         ->orderBy('j.professor_id')
-        ->orderBy('s.date')
+        ->orderBy('s.date_soutenance')
         ->orderBy('s.heure_debut')
         ->get()
         ->groupBy('professor_id'); // groupe par prof
@@ -194,7 +194,7 @@ public function getAnomalies()
             $repos   = ($debut - $fin) / 60;                   // différence en minutes
 
             // Si même jour et moins de 60 minutes de pause
-            if ($liste[$i]->date === $liste[$i+1]->date && $repos < 60) {
+            if ($liste[$i]->date_soutenance === $liste[$i+1]->date_soutenance && $repos < 60) {
                 $prof = DB::table('professors')->where('id', $profId)->first();
                 $nom  = $prof ? $prof->nom . ' ' . $prof->prenom : 'Prof ID ' . $profId;
 
@@ -202,7 +202,7 @@ public function getAnomalies()
                     'type'    => 'repos',
                     'niveau'  => 'warning',
                     'message' => $nom . ' : seulement ' . $repos
-                               . ' min de pause entre 2 soutenances le ' . $liste[$i]->date,
+                               . ' min de pause entre 2 soutenances le ' . $liste[$i]->date_soutenance,
                 ];
             }
         }
