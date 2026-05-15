@@ -1,3 +1,9 @@
+@extends('layouts.app')
+
+@section('title', 'Dashboard')
+
+
+@section('content')
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -43,6 +49,29 @@
             </div>
         </div>
     </div>
+
+    
+    @if(count($anomalies) > 0)
+    <div class="mb-4">
+        <h5 class="mb-3">⚠ Anomalies détectées</h5>
+        @foreach($anomalies as $anomalie)
+            <div class="alert alert-{{ $anomalie['niveau'] }} py-2 mb-2 d-flex align-items-center gap-2">
+                {{-- icône selon le niveau --}}
+                @if($anomalie['niveau'] === 'danger')
+                    <span>🔴</span>
+                @else
+                    <span>🟡</span>
+                @endif
+                <span>{{ $anomalie['message'] }}</span>
+            </div>
+        @endforeach
+    </div>
+    @else
+    {{-- Si aucune anomalie : message vert de confirmation --}}
+    <div class="alert alert-success py-2 mb-4">
+        ✅ Aucune anomalie détectée — toutes les contraintes sont respectées.
+    </div>
+    @endif
 
     <div class="row g-3">
 
@@ -142,3 +171,4 @@
 </script>
 </body>
 </html>
+@endsection

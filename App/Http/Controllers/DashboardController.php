@@ -22,11 +22,13 @@ class DashboardController extends Controller
         $tableauCombine        = $this->service->getTableauCombine();
         $soutenancesParFiliere = $this->service->getSoutenancesParFiliere();
         $stats                 = $this->service->getStats();
-
+        $anomalies             = $this->service->getAnomalies();
+        
         return view('dashboard', compact(
             'tableauCombine',
             'soutenancesParFiliere',
-            'stats'
+            'stats',
+            'anomalies' 
         ));
     }
 }
