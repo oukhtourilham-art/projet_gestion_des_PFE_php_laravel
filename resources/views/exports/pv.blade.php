@@ -3,148 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <title>PV — {{ $soutenance->student->prenom }} {{ $soutenance->student->nom }}</title>
-    <link rel="stylesheet" href="pv.css">
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
+
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .header img { width: 80px; height: 80px; object-fit: contain; }
+        .header-center { text-align: center; flex: 1; padding: 0 20px; }
+        .univ-name { font-weight: bold; font-size: 13px; margin: 0; }
+        .univ-sub { font-size: 11px; margin: 2px 0; }
+        .doc-type { font-weight: bold; font-size: 13px; margin: 5px 0; }
+        .doc-year { font-size: 11px; margin: 0; }
+        .header-line { border: 2px solid black; margin: 10px 0; }
+
+        /* Champs */
+        .field-row { margin: 8px 0; }
+        .field-label { font-weight: bold; }
+        .field-value { margin-left: 5px; }
+        .field-block { margin: 12px 0; }
+        .field-line { border-bottom: 1px solid black; min-height: 20px; margin-top: 4px; padding: 2px; }
+        .field-sub-row { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+        .field-line-inline { border-bottom: 1px solid black; flex: 1; min-height: 18px; }
+        .sub-label { font-weight: bold; white-space: nowrap; }
+        .underline { text-decoration: underline; margin-bottom: 4px; }
+
+        /* Jury */
+        .jury-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+        .jury-role { font-style: italic; color: #444; }
+
+        /* Notes */
+        .note-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+        .note-box { border: 1px solid black; width: 60px; height: 22px; display: inline-block; }
+
+        /* Moyenne */
+        .moyenne-box { border: 2px solid black; padding: 8px; margin: 15px 0; text-align: center; }
+        .moyenne-title { font-weight: bold; font-size: 14px; margin: 0 0 5px 0; }
+
+        /* Signatures */
+        .signatures-section { margin-top: 20px; }
+        .sig-row { display: flex; gap: 30px; margin-top: 10px; }
+        .sig-block { display: flex; flex-direction: column; align-items: center; min-width: 150px; }
+        .sig-name { font-size: 11px; margin-bottom: 30px; }
+        .sig-line { border-bottom: 1px solid black; width: 100%; margin-top: 5px; }
+    </style>
 </head>
 <body>
 
-    <!--Header-->
+    <!-- Header avec logos -->
     <div class="header">
-        <div class="header-logo-left">
-            <img src="logo-university.png" alt="Logo Université">
+        <div>
+            <img src="{{ public_path('logo-university.png') }}" alt="Logo Université">
         </div>
         <div class="header-center">
             <p class="univ-name">UNIVERSITE ABDELMALEK ESSAADI</p>
-            <p class="univ-sub">École Nationale des Sciences Appliquées d'Al-Hoceima - Maroc</p>
-            <h1>Département de Mathématiques et Informatique</h1>
+            <p class="univ-sub">École Nationale des Sciences Appliquées d'Al-Hoceima</p>
+            <h3 style="margin: 4px 0;">Département Mathématiques Informatique</h3>
             <p class="doc-type">Fiche d'évaluation du Projet de Fin d'Étude</p>
-            <p class="doc-year">Année Universitaire : 2023-2024</p>
+            <p class="doc-year">Année Universitaire : 2025-2026</p>
         </div>
-        <div class="header-logo-right">
-            <img src="logo-ensa.png" alt="Logo ENSA">
+        <div>
+            <img src="{{ public_path('logo-ensa.png') }}" alt="Logo ENSA">
         </div>
     </div>
 
     <hr class="header-line">
 
-    <!-- Body-->
-    <div class="body">
+    <!-- Nom étudiant -->
+    <div class="field-row">
+        <span class="field-label">Nom - Prénom de l'élève ingénieur :</span>
+        <span class="field-value">{{ $soutenance->student->prenom }} {{ $soutenance->student->nom }}</span>
+    </div>
 
-        <!-- Nom -->
-        <div class="field-row">
-            <span class="field-label">Nom - Prénom de l'élève ingénieur :</span>
-            <span class="field-value">{{ $soutenance->student->prenom }} {{ $soutenance->student->nom }}</span>
-            <span class="field-dots"></span>
+    <!-- Filière -->
+    <div class="field-row">
+        <span class="field-label">Filière :</span>
+        <span class="field-value">{{ $soutenance->student->filiere }}</span>
+    </div>
+
+    <!-- Intitulé du rapport -->
+    <div class="field-block">
+        <p class="field-label underline">Intitulé du rapport :</p>
+        <div class="field-line">{{ $soutenance->sujet ?? '' }}</div>
+    </div>
+
+    <!-- Encadrant -->
+    <div class="field-block">
+        <p class="field-label underline">L'encadrant(e) interne :</p>
+        <div class="field-sub-row">
+            <span class="sub-label">Pr.</span>
+            {{-- ✅ Corrigé : encadrant via student --}}
+            <span class="field-line-inline">
+                {{ $soutenance->student->encadrant->nom ?? '' }}
+                {{ $soutenance->student->encadrant->prenom ?? '' }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Membres du jury -->
+    <div class="field-block">
+        <p class="field-label underline">Membres du jury :</p>
+
+        {{-- ✅ Encadrant ajouté comme 1er membre --}}
+        <div class="jury-row">
+            <span>–</span>
+            <span class="sub-label">Pr.</span>
+            <span class="field-line-inline">
+                {{ $soutenance->student->encadrant->nom ?? '' }}
+                {{ $soutenance->student->encadrant->prenom ?? '' }}
+            </span>
+            <span class="jury-role">(Encadrant)</span>
         </div>
 
-        <!-- Filière -->
-        <div class="field-row filiere-row">
-            <span class="field-label">Filière :</span>
-            <span class="checkbox-group">
-                <span class="checkbox {{ $soutenance->student->filiere === 'Ingénierie des Données' ? 'checked' : '' }}"></span>
-                <span class="checkbox-label">Ingénierie des Données</span>
-                <span class="checkbox {{ $soutenance->student->filiere === 'Génie Informatique' ? 'checked' : '' }}"></span>
-                <span class="checkbox-label">Génie Informatique</span>
-                <span class="checkbox {{ $soutenance->student->filiere === 'Transformation Digitale Et  Intellegence Artificielle' ? 'checked' : '' }}"></span>
-                <span class="checkbox-label">Transformation Digitale Et  Intellegence Artificielle</span>
+        {{-- Les 2 membres du jury --}}
+        @foreach($soutenance->juries as $i => $j)
+        <div class="jury-row">
+            <span>–</span>
+            <span class="sub-label">Pr.</span>
+            <span class="field-line-inline">
+                {{ $j->professor->nom ?? '' }}
+                {{ $j->professor->prenom ?? '' }}
+            </span>
+            <span class="jury-role">{{ $i === 0 ? '(Président)' : '(Rapporteur)' }}</span>
+        </div>
+        @endforeach
+    </div>
+
+    <!-- Note du Contenu -->
+    <div class="field-block">
+        <p class="field-label underline">
+            Note du Contenu
+            <span style="font-weight: normal; font-style: italic;">(En prenant en compte l'appréciation de l'entreprise)</span>
+        </p>
+        <div class="note-row">
+            <span class="sub-label">C =</span>
+            <span class="note-box"></span>
+        </div>
+    </div>
+
+    <!-- Note du Mémoire -->
+    <div class="field-block">
+        <p class="field-label underline">Note du Mémoire</p>
+        <div class="note-row">
+            <span class="sub-label">M =</span>
+            <span class="note-box"></span>
+        </div>
+    </div>
+
+    <!-- Note de la Soutenance -->
+    <div class="field-block">
+        <p class="field-label underline">Note de la Soutenance</p>
+        <div class="note-row">
+            <span class="sub-label">S =</span>
+            <span class="note-box"></span>
+        </div>
+    </div>
+
+    <!-- Moyenne -->
+    <div class="moyenne-box">
+        <p class="moyenne-title">MOYENNE</p>
+        <p>Moyenne = C × 0,5 + M × 0,2 + S × 0,3 = ___________</p>
+    </div>
+
+    <!-- Date et signatures -->
+    <div class="signatures-section">
+        <div class="field-row">
+            <span class="field-label">Le :</span>
+            <span style="margin-left: 5px;">
+                {{ $soutenance->date_soutenance ? \Carbon\Carbon::parse($soutenance->date_soutenance)->format('d/m/Y') : '___/___/______' }}
             </span>
         </div>
 
-        <!-- Intitulé du rapport -->
-        <div class="field-block">
-            <p class="field-label underline">Intitulé du rapport :</p>
-            <div class="field-line">{{ $soutenance->sujet }}</div>
-        </div>
+        <p class="field-label" style="margin-top: 15px;">Signature des membres du jury :</p>
 
-        <!-- Encadrant -->
-        <div class="field-block">
-            <p class="field-label underline">L'encadrant (e) interne:</p>
-            <div class="field-sub-row">
-                <span class="sub-label">Pr.</span>
-                <span class="field-line-inline">{{ $soutenance->encadrant->nom ?? '' }}</span>
-            </div>
-        </div>
+        {{-- ✅ 3 signatures : encadrant + 2 jurys --}}
+        <div class="sig-row">
 
-        <!-- Membres du jury -->
-        <div class="field-block">
-            <p class="field-label underline">Membres du jury :</p>
-            @foreach($soutenance->juries as $i => $j)
-            <div class="jury-row">
-                <span class="jury-dash">–</span>
-                <span class="sub-label">Pr.</span>
-                <span class="field-line-inline">{{ $j->professor->nom }}</span>
-                <span class="jury-role">
-                    {{ $i === 0 ? 'Président' : 'Rapporteur' }}
+            {{-- Encadrant --}}
+            <div class="sig-block">
+                <span class="sig-name">
+                    Pr. {{ $soutenance->student->encadrant->nom ?? '' }}
+                    {{ $soutenance->student->encadrant->prenom ?? '' }}
+                    <br><small>(Encadrant)</small>
                 </span>
+                <div class="sig-line"></div>
+            </div>
+
+            {{-- 2 membres jury --}}
+            @foreach($soutenance->juries as $i => $j)
+            <div class="sig-block">
+                <span class="sig-name">
+                    Pr. {{ $j->professor->nom ?? '' }}
+                    {{ $j->professor->prenom ?? '' }}
+                    <br><small>{{ $i === 0 ? '(Président)' : '(Rapporteur)' }}</small>
+                </span>
+                <div class="sig-line"></div>
             </div>
             @endforeach
+
         </div>
-
-        <!-- Note du Contenu -->
-        <div class="field-block note-block">
-            <p class="field-label underline">
-                Note du Contenu
-                <span class="note-hint">(En prenant en compte l’appréciation de l’entreprise)</span>
-            </p>
-            <div class="note-row">
-                <span class="note-letter">C =</span>
-                <span class="note-box">{{ $soutenance->note_contenu ?? '' }}</span>
-            </div>
-        </div>
-
-        <!-- Note du Mémoire -->
-        <div class="field-block note-block">
-            <p class="field-label underline">Note du Mémoire</p>
-            <div class="note-row">
-                <span class="note-letter">M =</span>
-                <span class="note-box">{{ $soutenance->note_rapport ?? '' }}</span>
-            </div>
-        </div>
-
-        <!-- Note de la Soutenance -->
-        <div class="field-block note-block">
-            <p class="field-label underline">Note de la Soutenance</p>
-            <div class="note-row">
-                <span class="note-letter">S =</span>
-                <span class="note-box">{{ $soutenance->note_expose ?? '' }}</span>
-            </div>
-        </div>
-
-        <!-- Moyenne -->
-        <div class="moyenne-box">
-            <p class="moyenne-title">MOYENNE</p>
-            <p class="moyenne-formula">
-                Moyenne &nbsp;= C * 0,5 + M * 0,2 + S * 0,3 =
-                <span class="moyenne-result">
-                    @php
-                        $c = $soutenance->note_contenu ?? 0;
-                        $m = $soutenance->note_rapport ?? 0;
-                        $s = $soutenance->note_expose ?? 0;
-                        $moy = ($c * 0.5) + ($m * 0.2) + ($s * 0.3);
-                    @endphp
-                    {{ number_format($moy, 2) }}
-                </span>
-            </p>
-        </div>
-
-        <!-- Date et signatures -->
-        <div class="signatures-section">
-            <div class="date-row">
-                <span class="field-label">Le :</span>
-                <span class="field-dots-sm"></span>
-                <span>{{ \Carbon\Carbon::parse($soutenance->date)->format('d/m/Y') }}</span>
-            </div>
-
-            <p class="sig-title">Signature des membres du jury :</p>
-            <div class="sig-row">
-                @foreach($soutenance->juries as $j)
-                <div class="sig-block">
-                    <span class="sub-label">Pr.</span>
-                    <span class="sig-dots"></span>
-                </div>
-                @endforeach
-            </div>
-        </div>
-
     </div>
 
 </body>

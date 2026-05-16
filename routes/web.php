@@ -6,6 +6,7 @@ use App\Http\Controllers\AffectationController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\PlanningController;
 
 // Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -14,6 +15,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 Route::get('/import', [ImportController::class, 'showForm'])->name('import.form');
 Route::post('/import/students', [ImportController::class, 'importStudents'])->name('import.students');
 Route::post('/import/professors', [ImportController::class, 'importProfessors'])->name('import.professors');
+Route::post('/import/sujets', [ImportController::class, 'importSujets'])->name('import.sujets');
 
 // Affectation
 Route::get('/affecter-encadrants', [AffectationController::class, 'affecterEncadrants']);
@@ -28,8 +30,19 @@ Route::get('/planning', function () {
     return view('planning', compact('soutenances'));
 })->name('planning.index');
 
-// Export
+Route::get('/planning/generate', [PlanningController::class, 'generatePlanning'])->name('planning.generate');
+Route::post('/planning/dates', [PlanningController::class, 'saveDates'])->name('planning.dates');
+
+// Export Planning
 Route::get('/export', [ExportController::class, 'index'])->name('export.index');
 Route::get('/export/pdf', [ExportController::class, 'exportPDF'])->name('export.pdf');
 Route::get('/export/word', [ExportController::class, 'exportWord'])->name('export.word');
-Route::get('/export/pv/{id}', [ExportController::class, 'exportPV'])->name('export.pv');
+
+// Export Affectation encadrants
+Route::get('/export/affectation/pdf', [ExportController::class, 'exportAffectationPDF'])->name('export.affectation.pdf');
+Route::get('/export/affectation/word', [ExportController::class, 'exportAffectationWord'])->name('export.affectation.word');
+
+Route::get('/export/pv/filiere/{filiere}/{format}', [ExportController::class, 'exportPVFiliere'])->name('export.pv.filiere');
+
+// Export PV individuel
+Route::get('/export/pv/{id}/{format}', [ExportController::class, 'exportPV'])->name('export.pv');

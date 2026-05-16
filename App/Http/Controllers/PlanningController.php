@@ -1,6 +1,6 @@
 <?php
 namespace App\Http\Controllers;
-
+use Illuminate\Http\Request; 
 use App\Models\Student;
 use App\Models\Affectation;
 use App\Models\Soutenance;
@@ -10,7 +10,27 @@ use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use  phpOffice\phpWord\PhpWord;
 
+
+
 class PlanningController extends Controller{
+    public function saveDates(Request $request)
+  {
+    $request->validate([
+        'date1' => 'required|date',
+        'date2' => 'required|date',
+        'date3' => 'required|date',
+    ]);
+
+    // Sauvegarder les dates dans la session
+    session([
+        'date1' => $request->date1,
+        'date2' => $request->date2,
+        'date3' => $request->date3,
+    ]);
+
+    return redirect()->back()->with('success', 'Dates enregistrées avec succès !');
+   }
+
     public function generateAffectation(){
     Student::query()->update(['encadrant_id' => null]); //etudiants sans encadrant}
     $studentsByFiliere=Student::all()->groupBy('filiere');   //regrouper par filire
@@ -28,6 +48,7 @@ class PlanningController extends Controller{
      }
  
 
+     
   public function generatePlanning(){
 
     $students = Student::whereDoesntHave("soutenance")->get(); // students sans soutenance
