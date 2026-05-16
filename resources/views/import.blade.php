@@ -74,20 +74,9 @@
 
     {{-- Dates de soutenance --}}
     <h2>Dates des soutenances</h2>
-    <p style="color: gray; font-size: 14px;">Entrez les 3 jours de soutenances</p>
     <form action="{{ route('planning.dates') }}" method="POST">
         @csrf
-
-        <label for="date1">Jour 1 :</label>
-        <input type="date" id="date1" name="date1" required>
-        <br><br>
-
-        <label for="date2">Jour 2 :</label>
-        <input type="date" id="date2" name="date2" required>
-        <br><br>
-
-        <label for="date3">Jour 3 :</label>
-        <input type="date" id="date3" name="date3" required>
+        <input type="date" id="date" name="date_soutenance" required>
         <br><br>
 
         <button type="submit">Enregistrer les dates</button>

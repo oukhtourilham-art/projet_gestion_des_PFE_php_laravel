@@ -12,6 +12,10 @@ class Student extends Model{
     public function encadrant(){
         return $this->belongsTo(Professor::class, 'encadrant_id');
     }
+
+    public function soutenance(){
+        return $this->hasOne(Soutenance::class);
+    }
     public function binome()
 {
     return $this->belongsTo(Student::class, 'binome_id');

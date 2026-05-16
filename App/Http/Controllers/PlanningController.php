@@ -142,5 +142,11 @@ class PlanningController extends Controller{
             "jury_id1" => $jury[0]->id,
             "jury_id2" => $jury[1]->id
         ]);
+
+        return response()->json([
+            'message' => 'Planning généré avec succès !',
+            'total_etudiants' => $students->count(),
+        ]);
     }
-}}
+}
+}
