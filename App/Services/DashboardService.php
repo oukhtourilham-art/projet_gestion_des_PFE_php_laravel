@@ -132,10 +132,11 @@ public function getAnomalies()
     // Deux soutenances dans la même salle au même créneau = conflit
     $chevauchements = DB::table('soutenances as s1')
         ->join('soutenances as s2', function($join) {
-            $join->on('s1.salle', '=', 's2.salle')        // même salle
-                 ->on('s1.date_soutenance', '=', 's2.date_soutenance')           // même jour
-                 ->on('s1.heure_debut', '=', 's2.heure_debut') // même heure
-                 ->whereColumn('s1.id', '<', 's2.id');     // évite les doublons
+
+            $join->on('s1.salle', '=', 's2.salle')                        // même salle
+                 ->on('s1.date_soutenance', '=', 's2.date_soutenance')    // même jour
+                 ->on('s1.heure_debut', '=', 's2.heure_debut')            // même heure
+                 ->whereColumn('s1.id', '<', 's2.id');                    // évite les doublons
         })
         ->select('s1.salle', 's1.date_soutenance', 's1.heure_debut')
         ->get();
