@@ -104,8 +104,8 @@
     <div class="doc-center">
         <div class="doc-univ">UNIVERSITE ABDELMALEK ESSAADI</div>
         <div class="doc-school">École Nationale des Sciences Appliquées d'Al-Hoceima - Maroc</div>
-        <div class="doc-dept">Département de Mathématiques et Informatique</div>
-        <div class="doc-title">Affectation des Encadrants — Projets de Fin d'Étude (Première Session)</div>
+        <div class="doc-dept">Département Mathématiques Informatique</div>
+        <div class="doc-title">Affectation des Encadrants - Projets de Fin d'Étude (Première Session)</div>
         <div class="doc-year">Année Universitaire : {{ date('Y') - 1 }}/{{ date('Y') }}</div>
     </div>
 </div>

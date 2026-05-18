@@ -27,10 +27,10 @@
 
         <label for="filiere">Filière :</label>
         <select id="filiere" name="filiere" required>
-            <option value="">-- Choisir la filière --</option>
-            <option value="GI">Génie Informatique (GI)</option>
+            <option value=""> Choisir la filière </option>
+            <option value="TDAI">TDAI</option>
+            <option value="GI">GI</option>
             <option value="DATA">Data</option>
-            <option value="TDAI">Transformation Digitale & IA (TDAI)</option>
         </select>
         <br><br>
 

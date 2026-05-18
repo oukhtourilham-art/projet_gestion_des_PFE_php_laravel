@@ -6,8 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Professor extends Model
 {
-   protected $fillable = ['nom', 'prenom', '
-   discipline'];
+   protected $fillable = ['nom', 'prenom', 'discipline'];
     public function students(){
         return $this->hasMany(Student::class, 'encadrant_id');
     }

@@ -21,21 +21,21 @@ class ProfessorSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=1;'); // pur réactiver les rolations
 
         $professors = [
-            ['nom' => 'ABAKOUY',  'prenom' => 'Redouan',  'departement' => 'Informatique'],
-            ['nom' => 'ABOUELHANOUNE',  'prenom' => 'Younes',  'departement' => 'Mathématique'],
-            ['nom' => 'ADDAM',  'prenom' => 'Mohamed',  'departement' => 'Mathématique'],
-            ['nom' => 'ADDOU',  'prenom' => 'Khadija',  'departement' => 'Gestion'],
-            ['nom' => 'ALLAOUZI',  'prenom' => 'Imane',  'departement' => 'Informatique'],
-            ['nom' => 'AMATTOUCH ',  'prenom' => 'Mohamed Ridouan',  'departement' => 'Mathématique'],
-            ['nom' => 'BADI',  'prenom' => 'Imad',  'departement' => 'Informatique'],
-            ['nom' => 'BAHRI',  'prenom' => 'Abdelkhalak',  'departement' => 'Informatique'],
+            ['nom' => 'ABAKOUY',  'prenom' => 'Redouan',  'discipline' => 'Informatique'],
+            ['nom' => 'ABOUELHANOUNE',  'prenom' => 'Younes',  'discipline' => 'Mathématique'],
+            ['nom' => 'ADDAM',  'prenom' => 'Mohamed',  'discipline' => 'Mathématique'],
+            ['nom' => 'ADDOU',  'prenom' => 'Khadija',  'discipline' => 'Gestion'],
+            ['nom' => 'ALLAOUZI',  'prenom' => 'Imane',  'discipline' => 'Informatique'],
+            ['nom' => 'AMATTOUCH ',  'prenom' => 'Mohamed Ridouan',  'discipline' => 'Mathématique'],
+            ['nom' => 'BADI',  'prenom' => 'Imad',  'discipline' => 'Informatique'],
+            ['nom' => 'BAHRI',  'prenom' => 'Abdelkhalak',  'discipline' => 'Informatique'],
         ];
 
         foreach($professors as $prof){
             Professor::create([
                 'nom' => $prof['nom'],
                 'prenom' => $prof['prenom'],
-                'departement' => $prof['departement'],
+                'discipline' => $prof['discipline'],
             ]);
         }
     }
