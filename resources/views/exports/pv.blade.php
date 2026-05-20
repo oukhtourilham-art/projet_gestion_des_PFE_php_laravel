@@ -83,7 +83,7 @@
 
     <!-- Logo gauche -->
     <div class="logo-left">
-        <img src="{{ public_path('logo-university.png') }}" alt="Logo Université">
+        <img src="{{ public_path('images/EnsahLogo.jpg') }}" alt="EnsahLogo">
     </div>
 
     <!-- Texte centre -->
@@ -97,7 +97,7 @@
 
     <!-- Logo droite -->
     <div class="logo-right">
-        <img src="{{ public_path('logo-ensa.png') }}" alt="Logo ENSA">
+          <img src="{{ public_path('images/LogoUniversite.png') }}" alt="LogoUniversite">
     </div>
 
 </div>
