@@ -10,7 +10,7 @@
 
     <header>
 
-        <img src="{{ asset('images/logo.png') }}" alt="Logo">
+        <img src="{{ asset('images/LogoEnsah.png') }}" alt="LogoEnsah">
         <h1>Gestion des Soutenances</h1>
 
         <nav>

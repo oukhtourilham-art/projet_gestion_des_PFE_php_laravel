@@ -16,12 +16,12 @@ class Student extends Model{
     public function soutenance(){
         return $this->hasOne(Soutenance::class);
     }
-    public function binome()
-{
-    return $this->belongsTo(Student::class, 'binome_id');
-}
-public function binomeOf()
-{
-    return $this->hasOne(Student::class, 'binome_id');
-}
+
+    public function binome(){
+        return $this->belongsTo(Student::class, 'binome_id');
+    }
+
+    public function binomeOf(){
+        return $this->hasOne(Student::class, 'binome_id');
+    }
 }
