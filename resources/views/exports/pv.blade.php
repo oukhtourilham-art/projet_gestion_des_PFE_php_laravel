@@ -66,8 +66,8 @@
 
 .logo-left img,
 .logo-right img {
-    width: 80px;
-    height: 80px;
+    width: 120px;
+    height: 120px;
     object-fit: contain;
 }
 
@@ -83,7 +83,7 @@
 
     <!-- Logo gauche -->
     <div class="logo-left">
-        <img src="{{ public_path('logo-university.png') }}" alt="Logo Université">
+        <img src="{{ public_path('images/LogoUniversite.png') }}" alt="LogoUniversite">
     </div>
 
     <!-- Texte centre -->
@@ -97,7 +97,7 @@
 
     <!-- Logo droite -->
     <div class="logo-right">
-        <img src="{{ public_path('logo-ensa.png') }}" alt="Logo ENSA">
+        <img src="{{ public_path('images/EnsahLogo.jpg') }}" alt="EnsahLogo">
     </div>
 
 </div>
