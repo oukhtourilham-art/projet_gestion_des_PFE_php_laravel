@@ -17,11 +17,11 @@ class Student extends Model{
         return $this->hasOne(Soutenance::class);
     }
     public function binome()
-{
-    return $this->belongsTo(Student::class, 'binome_id');
-}
-public function binomeOf()
-{
-    return $this->hasOne(Student::class, 'binome_id');
-}
+    {
+        return $this->belongsTo(Student::class, 'binome_id');
+    }
+    public function binomeOf()
+    {
+        return $this->hasOne(Student::class, 'binome_id');
+    }
 }

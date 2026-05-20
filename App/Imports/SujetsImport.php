@@ -14,6 +14,7 @@ class SujetsImport implements ToCollection, WithHeadingRow
     foreach ($rows as $row){
         $cne    = trim($row['cne'] ?? '');
         $nom    = trim($row['nom'] ?? '');
+        $prenom    = trim($row['prenom'] ?? '');
         $sujet  = trim($row['sujet'] ?? '');
         $langue = strtoupper(trim($row['langue'] ?? 'FR'));
         $binome = filter_var($row['binome'] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -22,23 +23,24 @@ class SujetsImport implements ToCollection, WithHeadingRow
             continue;
         }
 
-        $student = Student::where('cne', $cne)->first();
+        $student = Student::where('CNE', $cne)->first();
         if (!$student) {
             continue;
         }
         $student->nom = $nom;
+        $student->prenom = $nom;
         $student->sujet = $sujet;
         $student->langue = $langue;
-        // CASE 1: !BINOME
+        //CASE 1: !BINOME
         if (!$binome) {
             $student->binome_id = null;
             $student->save();
             continue;
         }
 
-        // CASE 2:binome trouvez etudiant avec memesijet
+        //CASE 2:binome trouvez etudiant avec memesijet
         $partner = Student::where('sujet', $sujet)
-            ->where('cne', '!=', $cne)
+            ->where('CNE', '!=', $cne)
             ->whereNull('binome_id')
             ->first();
 

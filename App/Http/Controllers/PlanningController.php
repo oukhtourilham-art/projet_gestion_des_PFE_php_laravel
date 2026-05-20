@@ -22,7 +22,6 @@ class PlanningController extends Controller
         return redirect()->back()->with('success', 'Date enregistrée avec succès !');
     }
 
-    //gardée mais pas utilisée dans les routes pour l'instant
     public function generateAffectation()
     {
         Student::query()->update(['encadrant_id' => null]);

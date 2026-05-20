@@ -25,7 +25,7 @@
 <body>
 <div class="container py-4">
 
-    <h2 class="fw-bold mb-1">Tableau de bord — Gestion des PFEs</h2>
+    <h2 class="fw-bold mb-1">Tableau de bord - Gestion des PFEs</h2>
     <p class="text-muted mb-4">Département Informatique </p>
 
     {{-- CARTES --}}
@@ -126,7 +126,7 @@
     @else
     {{-- Si aucune anomalie : message vert de confirmation --}}
     <div class="alert alert-success py-2 mb-4">
-        ✅ Aucune anomalie détectée — toutes les contraintes sont respectées.
+        Aucune anomalie détectée - toutes les contraintes sont respectées.
     </div>
     @endif
 </div>

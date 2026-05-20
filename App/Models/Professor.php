@@ -11,7 +11,7 @@ class Professor extends Model
         return $this->hasMany(Student::class, 'encadrant_id');
     }
 
-    // Relation: un prof peut etre dans plusieurs jurys
+    //Relation: un prof peut etre dans plusieurs jurys
     public function juries(){
         return $this->hasMany(Jury::class, 'professor_id');
     }

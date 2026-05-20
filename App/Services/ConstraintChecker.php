@@ -72,7 +72,7 @@ class ConstraintChecker
                        $jury->soutenance->heure_debut;
             });
 
-            // Comparer chaque jury avec les autres
+            //comparer chaque jury avec les autres
             foreach ($jurys as $j1) {
                 foreach ($jurys as $j2) {
                     if ($j1->id >= $j2->id) continue;
