@@ -123,7 +123,7 @@ class ExportController extends Controller
         $table = $section->addTable($styleTable);
         $table->addRow(400);
 
-        foreach (['Encadrant', 'Département', 'Nb Étudiants', 'Étudiants'] as $col) {
+        foreach (['Encadrant', 'Discipline', 'Nb Étudiants', 'Étudiants'] as $col) {
             $table->addCell(null, $styleHeader)->addText($col, $fontHeader);
         }
 
@@ -131,7 +131,7 @@ class ExportController extends Controller
             $etudiants = $prof->students->map(fn($e) => $e->nom . ' ' . $e->prenom)->implode(', ');
             $table->addRow();
             $table->addCell(2000)->addText($prof->nom . ' ' . $prof->prenom, $fontCell);
-            $table->addCell(1500)->addText($prof->departement ?? '-', $fontCell);
+            $table->addCell(1500)->addText($prof->discipline ?? '-', $fontCell);
             $table->addCell(800)->addText($prof->students->count(), $fontCell);
             $table->addCell(5000)->addText($etudiants ?: '-', $fontCell);
         }
@@ -143,57 +143,6 @@ class ExportController extends Controller
         return response()->download($temp, $filename)->deleteFileAfterSend(true);
     }
 
-    // Export PV par filière 
-    public function exportPVFiliere($filiere, $format)
-    {
-        if ($filiere == 'all') {
-            $soutenances = Soutenance::with(['student.encadrant', 'juries.professor'])->get();
-        } else {
-            $soutenances = Soutenance::with(['student.encadrant', 'juries.professor'])
-                ->whereHas('student', fn($q) => $q->where('filiere', $filiere))
-                ->get();
-        }
-
-        if ($format == 'pdf') {
-            $pdf = Pdf::loadView('exports.pv_filiere', compact('soutenances', 'filiere'))
-                      ->setPaper('a4', 'portrait');
-            return $pdf->download('pv-' . $filiere . '.pdf');
-        }
-
-        // Word
-        $phpWord = new \PhpOffice\PhpWord\PhpWord();
-        $phpWord->setDefaultFontName('Arial');
-        $phpWord->setDefaultFontSize(11);
-
-        foreach ($soutenances as $s) {
-            $encadrant = ($s->student->encadrant->nom ?? '') . ' ' . ($s->student->encadrant->prenom ?? '');
-            $section = $phpWord->addSection(['marginTop' => 600, 'marginBottom' => 600, 'marginLeft' => 800, 'marginRight' => 800]);
-
-            $section->addText('UNIVERSITE ABDELMALEK ESSAADI', ['bold' => true, 'size' => 13], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
-            $section->addText('Fiche d\'évaluation du Projet de Fin d\'Étude', ['bold' => true, 'size' => 13], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER, 'spaceAfter' => 200]);
-            $section->addText('Nom - Prénom : ' . ($s->student->prenom ?? '') . ' ' . ($s->student->nom ?? ''), ['size' => 11]);
-            $section->addText('Filière : ' . ($s->student->filiere ?? ''), ['size' => 11]);
-            $section->addText('Date : ' . ($s->date_soutenance ?? '-'), ['size' => 11]);
-            $section->addText('Salle : ' . ($s->salle ?? '-'), ['size' => 11]);
-            $section->addText('Encadrant : Pr. ' . $encadrant, ['size' => 11]);
-            $section->addText('Membres du jury :', ['bold' => true, 'size' => 11]);
-            $section->addText('– Pr. ' . $encadrant . ' (Encadrant)', ['size' => 11]);
-            foreach ($s->juries as $i => $j) {
-                $role = $i === 0 ? 'Président' : 'Rapporteur';
-                $section->addText('– Pr. ' . ($j->professor->nom ?? '') . ' ' . ($j->professor->prenom ?? '') . ' (' . $role . ')', ['size' => 11]);
-            }
-            $section->addText('Note du Contenu (C) = ___________', ['size' => 11]);
-            $section->addText('Note du Mémoire (M) = ___________', ['size' => 11]);
-            $section->addText('Note de la Soutenance (S) = ___________', ['size' => 11]);
-            $section->addText('MOYENNE = C × 0,5 + M × 0,2 + S × 0,3 = ___________', ['bold' => true, 'size' => 12]);
-        }
-
-        
-        $filename = 'pv-' . $filiere . '.docx';
-        $temp = tempnam(sys_get_temp_dir(), 'pv_') . '.docx';
-        \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007')->save($temp);
-        return response()->download($temp, $filename)->deleteFileAfterSend(true);
-    }
 
     // Export PV individuel 
     public function exportPV($id, $format = 'pdf')

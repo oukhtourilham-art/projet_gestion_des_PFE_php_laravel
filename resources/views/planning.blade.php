@@ -9,7 +9,7 @@
     @if($soutenances->isEmpty())
         <p>Aucune soutenance planifiée pour le moment.</p>
     @else
-        <table border="1" cellpadding="6" cellspacing="0">
+        <table border="1" cellpadding="6" cellspacing="0" >
             <thead>
                 <tr>
                     <th>#</th>

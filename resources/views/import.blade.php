@@ -28,7 +28,7 @@
         <label for="filiere">Filière :</label>
         <select id="filiere" name="filiere" required>
             <option value=""> Choisir la filière </option>
-            <option value="TDAI">TDAI</option>
+            <option value="TDAI">TDIA</option>
             <option value="GI">GI</option>
             <option value="DATA">Data</option>
         </select>

@@ -105,10 +105,10 @@ class AffectationController extends Controller
 
             $encadrant = $soutenance->student->encadrant;
 
-            // on récupérer tous les profs sauf l'encadarant
+            //on récupérer tous les profs sauf l'encadarant
             $profs = Professor::where('id', '!=', $encadrant->id)->get();
 
-            // trie par nombre de jurys (les mois chargés en premier)
+            //trie par nombre de jurys (les mois chargés en premier)
             $profs = $profs->sortBy(function($prof){
                 return $prof->juries()->count();
             });

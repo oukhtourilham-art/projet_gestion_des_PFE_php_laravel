@@ -26,33 +26,8 @@
 
     <hr>
 
-    {{-- Export PV par filière --}}
-    <h2>Exporter les PV par filière</h2>
-    <p style="color: gray; font-size: 14px;">Fiches d'évaluation par filière</p>
-
-    <strong>Filière GI :</strong>
-    <a href="{{ route('export.pv.filiere', ['filiere' => 'GI', 'format' => 'pdf']) }}">PDF</a>
-    &nbsp;|&nbsp;
-    <a href="{{ route('export.pv.filiere', ['filiere' => 'GI', 'format' => 'word']) }}">Word</a>
-
-    <br><br>
-
-    <strong>Filière DATA :</strong>
-    <a href="{{ route('export.pv.filiere', ['filiere' => 'DATA', 'format' => 'pdf']) }}">PDF</a>
-    &nbsp;|&nbsp;
-    <a href="{{ route('export.pv.filiere', ['filiere' => 'DATA', 'format' => 'word']) }}">Word</a>
-
-    <br><br>
-
-    <strong>Filière TDAI :</strong>
-    <a href="{{ route('export.pv.filiere', ['filiere' => 'TDAI', 'format' => 'pdf']) }}">PDF</a>
-    &nbsp;|&nbsp;
-    <a href="{{ route('export.pv.filiere', ['filiere' => 'TDAI', 'format' => 'word']) }}">Word</a>
-
-    <hr>
-
-    {{-- PV individuels --}}
-    <h2>Procès-Verbaux individuels</h2>
+    {{--Export PV individuels --}}
+    <h2>Export PV individuels</h2>
 
     <table border="1" cellpadding="6" cellspacing="0">
         <thead>

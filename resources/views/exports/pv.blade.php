@@ -45,26 +45,62 @@
         .sig-block { display: flex; flex-direction: column; align-items: center; min-width: 150px; }
         .sig-name { font-size: 11px; margin-bottom: 30px; }
         .sig-line { border-bottom: 1px solid black; width: 100%; margin-top: 5px; }
+        ..header {
+    width: 100%;
+    position: relative;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.logo-left {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.logo-right {
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.logo-left img,
+.logo-right img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+}
+
+.header-center {
+    padding: 0 100px;
+}
     </style>
 </head>
 <body>
 
     <!-- Header avec logos -->
     <div class="header">
-        <div>
-            <img src="{{ public_path('logo-university.png') }}" alt="Logo Université">
-        </div>
-        <div class="header-center">
-            <p class="univ-name">UNIVERSITE ABDELMALEK ESSAADI</p>
-            <p class="univ-sub">École Nationale des Sciences Appliquées d'Al-Hoceima</p>
-            <h3 style="margin: 4px 0;">Département Mathématiques Informatique</h3>
-            <p class="doc-type">Fiche d'évaluation du Projet de Fin d'Étude</p>
-            <p class="doc-year">Année Universitaire : 2025-2026</p>
-        </div>
-        <div>
-            <img src="{{ public_path('logo-ensa.png') }}" alt="Logo ENSA">
-        </div>
+
+    <!-- Logo gauche -->
+    <div class="logo-left">
+        <img src="{{ public_path('logo-university.png') }}" alt="Logo Université">
     </div>
+
+    <!-- Texte centre -->
+    <div class="header-center">
+        <p class="univ-name">UNIVERSITE ABDELMALEK ESSAADI</p>
+        <p class="univ-sub">École Nationale des Sciences Appliquées d'Al-Hoceima</p>
+        <h3 style="margin: 4px 0;">Département Mathématiques Informatique</h3>
+        <p class="doc-type">Fiche d'évaluation du Projet de Fin d'Étude</p>
+        <p class="doc-year">Année Universitaire : 2025-2026</p>
+    </div>
+
+    <!-- Logo droite -->
+    <div class="logo-right">
+        <img src="{{ public_path('logo-ensa.png') }}" alt="Logo ENSA">
+    </div>
+
+</div>
 
     <hr class="header-line">
 
@@ -91,7 +127,7 @@
         <p class="field-label underline">L'encadrant(e) interne :</p>
         <div class="field-sub-row">
             <span class="sub-label">Pr.</span>
-            {{-- ✅ Corrigé : encadrant via student --}}
+    
             <span class="field-line-inline">
                 {{ $soutenance->student->encadrant->nom ?? '' }}
                 {{ $soutenance->student->encadrant->prenom ?? '' }}
@@ -103,7 +139,7 @@
     <div class="field-block">
         <p class="field-label underline">Membres du jury :</p>
 
-        {{-- ✅ Encadrant ajouté comme 1er membre --}}
+        {{-- Encadrant ajouté comme 1er membre --}}
         <div class="jury-row">
             <span>–</span>
             <span class="sub-label">Pr.</span>
@@ -175,7 +211,7 @@
 
         <p class="field-label" style="margin-top: 15px;">Signature des membres du jury :</p>
 
-        {{-- ✅ 3 signatures : encadrant + 2 jurys --}}
+        {{--3 signatures : encadrant + 2 jurys --}}
         <div class="sig-row">
 
             {{-- Encadrant --}}
