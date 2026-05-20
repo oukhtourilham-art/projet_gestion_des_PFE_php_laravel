@@ -47,9 +47,7 @@ class DashboardService
     }
 
     /*
-    |==========================================================================
     | STAT 2 — Soutenances par filière (pour le diagramme cercle)
-    |==========================================================================
     |
     | Student::select() = écrire une requête SELECT sur la table students
     |
@@ -73,9 +71,7 @@ class DashboardService
     }
 
     /*
-    |==========================================================================
     | STAT 3 — Chiffres résumés pour les cartes en haut
-    |==========================================================================
     |
     | ::count() = méthode Eloquent qui fait SELECT COUNT(*) FROM table
     | Retourne un simple nombre entier
@@ -92,15 +88,15 @@ class DashboardService
         ];
     }
 
-    // ═══════════════════════════════════════════════════════
+    
 // DÉTECTION DES ANOMALIES
 // Vérifie 3 contraintes et retourne la liste des problèmes
-// ═══════════════════════════════════════════════════════
+
 public function getAnomalies()
 {
     $anomalies = []; // tableau vide au départ — on y ajoute les problèmes trouvés
 
-    // ── ANOMALIE 1 : encadrants avec trop ou trop peu d'étudiants ──────────
+    // ── ANOMALIE 1 : encadrants avec trop ou trop peu d'étudiants 
     // On récupère chaque encadrant et son nombre d'étudiants
     $encadrements = DB::table('students')
         ->select('encadrant_id', DB::raw('COUNT(*) as nb'))
@@ -128,7 +124,7 @@ public function getAnomalies()
         }
     }
 
-    // ── ANOMALIE 2 : chevauchement de salles ───────────────────────────────
+    // ANOMALIE 2 : chevauchement de salles 
     // Deux soutenances dans la même salle au même créneau = conflit
     $chevauchements = DB::table('soutenances as s1')
         ->join('soutenances as s2', function($join) {
@@ -151,7 +147,7 @@ public function getAnomalies()
         ];
     }
 
-    // ── ANOMALIE 3 : prof dans 2 soutenances au même créneau ───────────────
+    //  ANOMALIE 3 : prof dans 2 soutenances au même créneau
     // Un prof ne peut pas être dans 2 salles en même temps
     $conflits = DB::table('juries as j1')
         ->join('juries as j2', function($join) {
@@ -177,7 +173,7 @@ public function getAnomalies()
         ];
     }
 
-    // ── ANOMALIE 4 : moins d'1h de repos entre 2 soutenances du même prof ──
+    //  ANOMALIE 4 : moins d'1h de repos entre 2 soutenances du même prof 
     $tousJurys = DB::table('juries as j')
         ->join('soutenances as s', 's.id', '=', 'j.soutenance_id')
         ->select('j.professor_id', 's.date_soutenance', 's.heure_debut', 's.heure_fin')
