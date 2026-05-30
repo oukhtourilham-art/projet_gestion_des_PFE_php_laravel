@@ -11,7 +11,7 @@
     <header>
 
         <img src="{{ asset('images/LogoEnsah.png') }}" alt="LogoEnsah">
-        <h1>Gestion des Soutenances</h1>
+        <h1>Gestion des Soutenances PFE ENSAH</h1>
 
         <nav>
             <a href="{{ route('import.form') }}">Importer</a>
