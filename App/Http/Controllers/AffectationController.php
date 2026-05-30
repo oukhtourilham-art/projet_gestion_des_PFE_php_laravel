@@ -99,7 +99,7 @@ class AffectationController extends Controller
 
             //verfion que l'etudiant a un encadrant
             if(!$soutenance->student || !$soutenance->student->encadrant){
-                $erreurs[] = "Etudiant ID {$soutenance->student_id} n'a pad d'encadrant";
+                $erreurs[] = "Etudiant ID {$soutenance->student_id} n'a pas d'encadrant";
                 continue;
             }
 
@@ -135,7 +135,7 @@ class AffectationController extends Controller
 
         // Retourner un rapport
         return response()->json([
-            'massage'  => 'Affectation terminée avec succès !',
+            'message'  => 'Affectation terminée avec succès !',
             'soutenances_créées'  => Soutenance::count(),
             'jurys_affectés'    => $affectees,
             'erreurs'           => $erreurs,
