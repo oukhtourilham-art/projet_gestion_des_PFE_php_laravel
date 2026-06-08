@@ -13,12 +13,44 @@ class ConstraintChecker
     public function checkEquilibre(): array
     {
         $erreurs = [];
-
-        $profs = Professor::withCount('juries')->get();
+        $profs = \App\Models\Professor::withCount(['students', 'juries'])->get();
 
         foreach ($profs as $prof) {
+
+            // Vérification min/max étudiants encadrés
+            if ($prof->students_count > 4) {
+                $erreurs[] = "❌ " . $prof->nom . " " . $prof->prenom .
+                            " encadre " . $prof->students_count .
+                            " étudiants (maximum autorisé : 4).";
+            }
+
+            if ($prof->students_count > 0 && $prof->students_count < 3) {
+                $erreurs[] = "⚠️ " . $prof->nom . " " . $prof->prenom .
+                        " encadre seulement " . $prof->students_count .
+                        " étudiant(s) (minimum recommandé : 3).";
+            }
+
+            // Vérification max jurys
             if ($prof->juries_count > 4) {
-                $erreurs[] = "{$prof->nom} {$prof->prenom} a {$prof->juries_count} jurys (maximum autorisé : 4)";
+                $erreurs[] = "❌ " . $prof->nom . " " . $prof->prenom .
+                         " a " . $prof->juries_count .
+                         " jurys (maximum autorisé : 4).";
+            }
+        }
+
+        // Vérification globale
+        $totalEtudiants = \App\Models\Student::count();
+        $totalProfs     = \App\Models\Professor::count();
+
+        if ($totalProfs > 0) {
+            $moyenne = round($totalEtudiants / $totalProfs, 1);
+            if ($moyenne < 3) {
+                $erreurs[] = "⚠️ Moyenne d'étudiants par encadrant : " . $moyenne .
+                         " (minimum recommandé : 3). Vous avez trop de professeurs.";
+            }
+            if ($moyenne > 4) {
+                $erreurs[] = "❌ Moyenne d'étudiants par encadrant : " . $moyenne .
+                         " (maximum autorisé : 4). Vous n'avez pas assez de professeurs.";
             }
         }
 
@@ -131,10 +163,55 @@ class ConstraintChecker
         return $erreurs;
     }
 
+    public function checkSallesSuffisantes(): array
+    {
+        $erreurs = [];
+
+        $salles = session('salles', []);
+        $nbSalles = count($salles);
+
+        if ($nbSalles == 0) {
+            $erreurs[] = "❌ Aucune salle sélectionnée. Veuillez choisir les salles sur la page import.";
+            return $erreurs;
+        }
+
+        // Créneaux par jour : 5 créneaux × nb salles
+        $creneauxParJour = 5 * $nbSalles;
+
+        // Jours disponibles
+        $jours = session('jours_soutenance', []);
+        $nbJours = count($jours);
+
+        if ($nbJours == 0) {
+            $erreurs[] = "❌ Aucune date de soutenance enregistrée. Veuillez entrer les dates sur la page import.";
+            return $erreurs;
+        }
+
+        $totalCreneaux = $creneauxParJour * $nbJours;
+        $totalEtudiants = \App\Models\Student::count();
+
+        if ($totalEtudiants > $totalCreneaux) {
+            $erreurs[] = "❌ Pas assez de créneaux ! " .
+                     $totalEtudiants . " étudiants mais seulement " .
+                     $totalCreneaux . " créneaux disponibles " .
+                     "(" . $nbSalles . " salles × 5 créneaux × " . $nbJours . " jours). " .
+                     "Ajoutez " . ($totalEtudiants - $totalCreneaux) . " créneau(x) supplémentaire(s).";
+        } else {
+            $creneauxRestants = $totalCreneaux - $totalEtudiants;
+            if ($creneauxRestants < 10) {
+                $erreurs[] = "⚠️ Attention : seulement " . $creneauxRestants .
+                         " créneau(x) libre(s) après planification.";
+            }
+        }
+
+        return $erreurs;
+    }
+
     // La fonction principale qui lance toutes les vérifications
     public function verifierTout(): array
     {
         return [
+            'salles_suffisantes'    => $this->checkSallesSuffisantes(),
             'equilibre'             => $this->checkEquilibre(),
             'chevauchement_salles'  => $this->checkChevauchementSalles(),
             'conflits_professeurs'  => $this->checkConflitsProfesseurs(),

@@ -60,16 +60,32 @@
                     <td>{{ \Carbon\Carbon::parse($s->date_soutenance)->format('d/m/Y') ?? '-' }}</td>
                     <td>{{ \Carbon\Carbon::parse($s->heure_debut)->format('H:i') ?? '-' }}</td>
                     <td>{{ $s->salle ?? '-' }}</td>
-                    <td>{{ $s->student->nom ?? '-' }}</td>
-                    <td>{{ $s->student->prenom ?? '-' }}</td>
                     <td>
-                        <span class="badge 
-                            @if($s->student->filiere == 'GI') bg-primary
-                            @elseif($s->student->filiere == 'DATA') bg-success
-                            @else bg-warning text-dark
-                            @endif">
-                            {{ $s->student->filiere ?? '-' }}
-                        </span>
+                        {{ $s->student->nom ?? '-' }}
+                        @if($s->binome_student_id)
+                            @php $binome = \App\Models\Student::find($s->binome_student_id); @endphp
+                            @if($binome)
+                                <br>{{ $binome->nom }}
+                            @endif
+                        @endif
+                    </td>
+                    <td>
+                        {{ $s->student->prenom ?? '-' }}
+                        @if($s->binome_student_id)
+                            @php $binome = \App\Models\Student::find($s->binome_student_id); @endphp
+                            @if($binome)
+                                <br>{{ $binome->prenom }}
+                            @endif
+                        @endif
+                    </td>
+                    <td>
+                        {{ $s->student->filiere ?? '-' }}
+                        @if($s->binome_student_id)
+                            @php $binome = \App\Models\Student::find($s->binome_student_id); @endphp
+                            @if($binome)
+                                <br>{{ $binome->filiere }}
+                            @endif
+                        @endif
                     </td>
                 </tr>
                 @endforeach

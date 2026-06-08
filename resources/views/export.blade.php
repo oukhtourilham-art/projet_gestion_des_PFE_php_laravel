@@ -29,7 +29,14 @@
     {{--Export PV individuels --}}
     <h2>Export PV individuels</h2>
 
-    <table border="1" cellpadding="6" cellspacing="0">
+    {{-- Barre de recherche --}}
+    <br>
+
+    <input type="text" id="recherche" placeholder="Chercher un étudiant..."
+       style="width:300px; padding:5px; margin-bottom:10px;"
+       onkeyup="filtrerEtudiants()">
+
+    <table border="1" cellpadding="6" cellspacing="0" id="tableau-pv">
         <thead>
             <tr>
                 <th>Étudiant</th>
@@ -42,12 +49,12 @@
         </thead>
         <tbody>
             @foreach($soutenances as $s)
-            <tr>
-                <td>{{ $s->student->prenom ?? '' }} {{ $s->student->nom ?? '' }}</td>
+            <tr class="ligne-etudiant">
+                <td>{{ $s->student->nom ?? '' }} {{ $s->student->prenom ?? '' }}</td>
                 <td>{{ $s->student->filiere ?? '' }}</td>
                 <td>{{ $s->date_soutenance ?? 'Non planifiée' }}</td>
                 <td>{{ $s->salle ?? '-' }}</td>
-                <td>{{ $s->student->encadrant->nom ?? '-' }} {{ $s->student->encadrant->prenom ?? '' }}</td>
+                <td>{{ $s->student->encadrant->nom ?? '-' }}</td>
                 <td>
                     <a href="{{ route('export.pv', ['id' => $s->id, 'format' => 'pdf']) }}">PDF</a>
                     &nbsp;|&nbsp;
@@ -57,5 +64,19 @@
             @endforeach
         </tbody>
     </table>
+    <br>
+    <script>
+        function filtrerEtudiants() {
+            const input  = document.getElementById('recherche').value.toLowerCase();
+            const lignes = document.querySelectorAll('.ligne-etudiant');
+
+            lignes.forEach(function(ligne) {
+                const texte = ligne.textContent.toLowerCase();
+                ligne.style.display = texte.includes(input) ? '' : 'none';
+            });
+        }
+    </script>
+
+    
 
 @endsection

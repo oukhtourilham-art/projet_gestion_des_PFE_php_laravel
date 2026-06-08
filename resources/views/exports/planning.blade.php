@@ -35,43 +35,46 @@
         </thead>
         <tbody>
             @foreach($soutenances as $i => $s)
+            @php
+                $binome = $s->binome_student_id
+                ? \App\Models\Student::find($s->binome_student_id)
+                : null;
+            @endphp
             <tr>
                 <td>{{ $i + 1 }}</td>
-
-                {{-- Encadrant --}}
                 <td>
                     {{ $s->student->encadrant->nom ?? '-' }}
                     {{ $s->student->encadrant->prenom ?? '' }}
                 </td>
-
-                {{-- Jury 1 --}}
                 <td>
                     @if($s->juries->count() > 0)
                         {{ $s->juries[0]->professor->nom ?? '-' }}
                         {{ $s->juries[0]->professor->prenom ?? '' }}
-                    @else
-                        -
-                    @endif
+                    @else - @endif
                 </td>
-
-                {{-- Jury 2 --}}
                 <td>
                     @if($s->juries->count() > 1)
                         {{ $s->juries[1]->professor->nom ?? '-' }}
                         {{ $s->juries[1]->professor->prenom ?? '' }}
-                    @else
-                        -
-                    @endif
+                    @else - @endif
                 </td>
-
                 <td>{{ $s->date_soutenance ?? '-' }}</td>
                 <td>{{ $s->heure_debut ?? '-' }}</td>
                 <td>{{ $s->salle ?? '-' }}</td>
-                <td>{{ $s->student->nom ?? '-' }}</td>
-                <td>{{ $s->student->prenom ?? '-' }}</td>
-                <td>{{ $s->student->filiere ?? '-' }}</td>
-            </tr>
-            @endforeach
+                <td>
+                    {{ $s->student->nom ?? '-' }}
+                    @if($binome)<br>{{ $binome->nom }}@endif
+                </td>
+                <td>
+                    {{ $s->student->prenom ?? '-' }}
+                    @if($binome)<br>{{ $binome->prenom }}@endif
+                </td>
+                <td>
+                    {{ $s->student->filiere ?? '-' }}
+                    @if($binome)<br>{{ $binome->filiere }}@endif
+                </td>
+                </tr>
+                @endforeach
         </tbody>
     </table>
 

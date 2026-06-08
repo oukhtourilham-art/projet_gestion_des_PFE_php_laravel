@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\PlanningController;
 use Illuminate\Http\Request;
 
 use App\Models\Soutenance;
@@ -14,39 +15,39 @@ use Illuminate\Support\Facades\DB;
 class AffectationController extends Controller
 {
     public function affecterEncadrants()
-{
-    // Récupérer les étudiants sans encadrant
-    $etudiants = Student::whereNull('encadrant_id')->get();
+    {
+        // Récupérer les étudiants sans encadrant
+        $etudiants = Student::whereNull('encadrant_id')->get();
 
-    if ($etudiants->isEmpty()) {
+        if ($etudiants->isEmpty()) {
+            return response()->json([
+                'message' => 'Tous les étudiants ont déjà un encadrant.'
+            ]);
+        }
+
+        // Récupérer tous les professeurs
+        $profs = Professor::all();
+
+        if ($profs->isEmpty()) {
+            return response()->json([
+                'message' => 'Aucun professeur trouvé.'
+            ]);
+        }
+
+        // Distribuer équitablement
+        foreach ($etudiants as $index => $etudiant) {
+            $profIndex = $index % $profs->count();
+            $etudiant->update([
+                'encadrant_id' => $profs[$profIndex]->id
+            ]);
+        }
+
         return response()->json([
-            'message' => 'Tous les étudiants ont déjà un encadrant.'
-        ]);
+            'message'             => 'Encadrants affectés avec succès !',
+            'etudiants_affectés'  => $etudiants->count(),
+            'professeurs_utilisés' => $profs->count(),
+        ], 200, [], JSON_UNESCAPED_UNICODE);
     }
-
-    // Récupérer tous les professeurs
-    $profs = Professor::all();
-
-    if ($profs->isEmpty()) {
-        return response()->json([
-            'message' => 'Aucun professeur trouvé.'
-        ]);
-    }
-
-    // Distribuer équitablement
-    foreach ($etudiants as $index => $etudiant) {
-        $profIndex = $index % $profs->count();
-        $etudiant->update([
-            'encadrant_id' => $profs[$profIndex]->id
-        ]);
-    }
-
-    return response()->json([
-        'message'             => 'Encadrants affectés avec succès !',
-        'etudiants_affectés'  => $etudiants->count(),
-        'professeurs_utilisés' => $profs->count(),
-    ], 200, [], JSON_UNESCAPED_UNICODE);
-}
 
     public function generer(){
         
@@ -139,6 +140,21 @@ class AffectationController extends Controller
             'soutenances_créées'  => Soutenance::count(),
             'jurys_affectés'    => $affectees,
             'erreurs'           => $erreurs,
+        ]);
+    }
+
+    public function genererTout()
+    {
+        //Affecter les encadrants
+        $this->affecterEncadrants();
+
+        // Générer le planning
+        app(PlanningController::class)->generatePlanning();
+
+        return response()->json([
+            'message' => 'Affectation et planning générés avec succès !',
+            'etudiants' => \App\Models\Student::count(),
+            'soutenances' => \App\Models\Soutenance::count(),
         ]);
     }
 }

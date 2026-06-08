@@ -66,10 +66,37 @@ class ExportController extends Controller
             $encadrant = ($s->student->encadrant->nom ?? '') . ' ' . ($s->student->encadrant->prenom ?? '');
             $jury = $s->juries->map(fn($j) => ($j->professor->nom ?? '') . ' ' . ($j->professor->prenom ?? ''))->implode(' / ');
 
+            // Vérifier si binôme existe
+            $binome = $s->binome_student_id
+                ? \App\Models\Student::find($s->binome_student_id)
+                : null;
+
+            // Préparer nom/prénom/filière avec binôme si existe
+            $nomEtudiant     = ($s->student->prenom ?? '') . ' ' . ($s->student->nom ?? '');
+            $filiereEtudiant = $s->student->filiere ?? '';
+
+            if ($binome) {
+                $nomEtudiant     .= "\n" . ($binome->prenom ?? '') . ' ' . ($binome->nom ?? '');
+                $filiereEtudiant .= "\n" . ($binome->filiere ?? '');
+            }
+
             $table->addRow();
             $table->addCell(300)->addText($i + 1, $fontCell, $centerPar);
-            $table->addCell(1800)->addText(($s->student->prenom ?? '') . ' ' . ($s->student->nom ?? ''), $fontCell);
-            $table->addCell(800)->addText($s->student->filiere ?? '', $fontCell, $centerPar);
+
+            // Cellule étudiant — ajouter les 2 lignes si binôme
+            $cellEtudiant = $table->addCell(1800);
+            $cellEtudiant->addText(($s->student->prenom ?? '') . ' ' . ($s->student->nom ?? ''), $fontCell);
+            if ($binome) {
+                $cellEtudiant->addText(($binome->prenom ?? '') . ' ' . ($binome->nom ?? ''), $fontCell);
+            }
+
+            // Cellule filière — ajouter les 2 lignes si binôme
+            $cellFiliere = $table->addCell(800);
+            $cellFiliere->addText($s->student->filiere ?? '', $fontCell, $centerPar);
+            if ($binome) {
+                $cellFiliere->addText($binome->filiere ?? '', $fontCell, $centerPar);
+            }
+
             $table->addCell(900)->addText($s->date_soutenance ?? '-', $fontCell, $centerPar);
             $table->addCell(600)->addText($s->heure_debut ?? '-', $fontCell, $centerPar);
             $table->addCell(700)->addText($s->salle ?? '-', $fontCell, $centerPar);

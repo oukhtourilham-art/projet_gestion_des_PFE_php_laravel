@@ -16,6 +16,8 @@ Route::get('/import', [ImportController::class, 'showForm'])->name('import.form'
 Route::post('/import/students', [ImportController::class, 'importStudents'])->name('import.students');
 Route::post('/import/professors', [ImportController::class, 'importProfessors'])->name('import.professors');
 Route::post('/import/sujets', [ImportController::class, 'importSujets'])->name('import.sujets');
+Route::post('/import/salles', [ImportController::class, 'saveSalles'])->name('import.salles');
+Route::post('/import/salle/add', [ImportController::class, 'addSalle'])->name('import.salle.add');
 
 // Affectation
 Route::get('/affecter-encadrants', [AffectationController::class, 'affecterEncadrants']);
@@ -46,3 +48,6 @@ Route::get('/export/pv/filiere/{filiere}/{format}', [ExportController::class, 'e
 
 // Export PV individuel
 Route::get('/export/pv/{id}/{format}', [ExportController::class, 'exportPV'])->name('export.pv');
+
+// Gener tout :
+Route::get('/generer-tout', [AffectationController::class, 'genererTout']);
