@@ -20,39 +20,29 @@
         <p style="color: red;">❌ {{ session('error') }}</p>
     @endif
 
-    {{-- Import Étudiants --}}
-    <h2>Import Étudiants</h2>
+    {{-- Import unifié étudiants + profs --}}
+    <h2>Importer les données (étudiants + professeurs)</h2>
     <p style="color:gray; font-size:13px;">
-        Fichier Excel avec <strong>3 feuilles</strong> :
-        Feuille 1 = GI | Feuille 2 = DATA | Feuille 3 = TDAI<br>
-        Colonnes : CNE, Nom, Prénom, Email personnel,
-        Email académique, Sujet, Langue (FR/EN), Binôme (oui/non)
+        Un seul fichier Excel suffit : chaque onglet (sauf "profs") est une filière —
+        le nom de l'onglet devient automatiquement le nom de la filière.
     </p>
-    <form action="{{ route('import.students') }}" method="POST"
-          enctype="multipart/form-data">
-        @csrf
-        <label>Choisir le fichier Excel :</label>
-        <input type="file" name="excel_file" accept=".xlsx,.xls" required>
-        <br><br>
-        <button type="submit">Importer les étudiants</button>
-    </form>
 
-    <hr>
-
-    {{-- Import Professeurs --}}
-    <h2>Import Professeurs</h2>
-    <p style="color:gray; font-size:13px;">
-        Colonnes : Nom, Prénom, Discipline
+    @if($filieres->isNotEmpty())
+    <p style="color:#555; font-size:13px;">
+        📂 Filières actuellement en base :
+        @foreach($filieres as $f)
+            <strong>{{ $f }}</strong>{{ !$loop->last ? ', ' : '' }}
+        @endforeach
     </p>
-    <form action="{{ route('import.professors') }}" method="POST"
-          enctype="multipart/form-data">
-        @csrf
-        <label>Choisir le fichier Excel :</label>
-        <input type="file" name="excel_file" accept=".xlsx,.xls" required>
-        <br><br>
-        <button type="submit">Importer les professeurs</button>
-    </form>
+    @endif
 
+    <form action="{{ route('import.unified') }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        <label>Fichier Excel (.xlsx) :</label><br>
+        <input type="file" name="fichier" accept=".xlsx,.xls" required style="margin:6px 0;">
+        <br><br>
+        <button type="submit">📥 Importer</button>
+    </form>
     <hr>
 
     {{-- Dates de soutenance --}}
@@ -65,21 +55,51 @@
         @csrf
         <label>Date de début :</label>
         <input type="date" name="date_debut" required
-               value="{{ session('date_debut') }}">
+               value="{{ old('date_debut', session('date_debut', $planningConfig?->date_debut ?? '')) }}">
         <br><br>
 
         <label>Date de fin :</label>
         <input type="date" name="date_fin" required
-               value="{{ session('date_fin') }}">
+               value="{{ old('date_fin', session('date_fin', $planningConfig?->date_fin ?? '')) }}">
         <br><br>
 
-        {{-- Calcul automatique affiché avant soumission --}}
+        <label>Heure de début :</label>
+        <input type="time" name="start_time" required
+               value="{{ old('start_time', $planningConfig ? \Carbon\Carbon::parse($planningConfig->start_time)->format('H:i') : '09:00') }}">
+        <br><br>
+
+        <label>Heure de fin :</label>
+        <input type="time" name="end_time" required
+               value="{{ old('end_time', $planningConfig ? \Carbon\Carbon::parse($planningConfig->end_time)->format('H:i') : '17:00') }}">
+        <br><br>
+
+        <label>Durée d'une soutenance (minutes) :</label>
+        <select name="slot_duration_minutes" required>
+            @foreach([60, 75, 90, 105, 120] as $mins)
+                <option value="{{ $mins }}"
+                    {{ (old('slot_duration_minutes', $planningConfig?->slot_duration_minutes ?? 60) == $mins) ? 'selected' : '' }}>
+                    {{ $mins }} min
+                </option>
+            @endforeach
+        </select>
+        <br><br>
+
+        <label>Durée de pause entre créneaux (minutes) :</label>
+        <select name="break_duration_minutes" required>
+            @foreach([0, 10, 15, 20, 30, 45] as $mins)
+                <option value="{{ $mins }}"
+                    {{ (old('break_duration_minutes', $planningConfig?->break_duration_minutes ?? 0) == $mins) ? 'selected' : '' }}>
+                    {{ $mins }} min{{ $mins === 0 ? ' (sans pause)' : '' }}
+                </option>
+            @endforeach
+        </select>
+        <br><br>
+
         <p id="duree_info" style="color:gray; font-size:13px;"></p>
 
         <button type="submit">Enregistrer les dates</button>
     </form>
 
-    {{-- Afficher les dates enregistrées --}}
     @if(session('date_debut') && session('date_fin'))
     <p style="color:green; font-size:13px;">
         ✅ Dates enregistrées :
@@ -87,6 +107,15 @@
         →
         {{ \Carbon\Carbon::parse(session('date_fin'))->format('d/m/Y') }}
         ({{ \Carbon\Carbon::parse(session('date_debut'))->diffInDays(\Carbon\Carbon::parse(session('date_fin'))) + 1 }} jours)
+    </p>
+    @endif
+
+    @if($planningConfig && !empty($planningConfig->time_slots))
+    <p style="color:gray; font-size:13px;">
+        Créneaux générés :
+        @foreach($planningConfig->time_slots as $slot)
+            {{ $slot['debut'] }}–{{ $slot['fin'] }}{{ !$loop->last ? ', ' : '' }}
+        @endforeach
     </p>
     @endif
 
@@ -128,13 +157,12 @@
     </p>
     @endif
 
-    
     <p id="info-salles" style="font-size:13px; margin-top:5px;"></p>
 
     <script>
-        // Calcul en temps réel des créneaux
         const nbJours      = {{ count(session('jours_soutenance', [])) }};
         const nbEtudiants  = {{ \App\Models\Student::count() }};
+        const nbCreneaux   = {{ $nbCreneaux }};
 
         function verifierSalles() {
             const cases      = document.querySelectorAll('input[name="salles[]"]:checked');
@@ -155,16 +183,16 @@
                 return;
             }
 
-            const totalCreneaux    = 5 * nbSalles * nbJours;
-            const sallesNecessaires = Math.ceil(nbEtudiants / (5 * nbJours));
+            const totalCreneaux    = nbCreneaux * nbSalles * nbJours;
+            const sallesNecessaires = Math.ceil(nbEtudiants / (nbCreneaux * nbJours));
 
             if (totalCreneaux < nbEtudiants) {
-                info.textContent = '❌ Insuffisant ! ' + nbSalles + ' salle(s) × 5 créneaux × ' +
+                info.textContent = '❌ Insuffisant ! ' + nbSalles + ' salle(s) × ' + nbCreneaux + ' créneaux × ' +
                            nbJours + ' jour(s) = ' + totalCreneaux + ' créneaux pour ' +
                            nbEtudiants + ' étudiants. Minimum : ' + sallesNecessaires + ' salle(s).';
                 info.style.color = 'red';
                 btnSalles.disabled = true;
-            }else {
+            } else {
                 const restants = totalCreneaux - nbEtudiants;
                 info.textContent = '✅ Suffisant ! ' + totalCreneaux + ' créneaux pour ' +
                            nbEtudiants + ' étudiants (' + restants + ' libre(s)).';
@@ -173,15 +201,12 @@
             }
         }
 
-        // Écouter les changements de cases à cocher
         document.querySelectorAll('input[name="salles[]"]')
             .forEach(cb => cb.addEventListener('change', verifierSalles));
 
-        // Lancer au chargement
         verifierSalles();
     </script>
 
-    {{-- Script calcul automatique durée --}}
     <script>
         const debut = document.querySelector('[name="date_debut"]');
         const fin   = document.querySelector('[name="date_fin"]');
