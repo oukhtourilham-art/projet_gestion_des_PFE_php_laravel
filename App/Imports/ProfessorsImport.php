@@ -10,10 +10,10 @@ class ProfessorsImport implements ToCollection
    {
     foreach ($rows->skip(2) as $row) {
     if (empty($row[0]))continue;
-    professor::create([
-    'nom'  => trim($row[0]),
-    'prenom'=> trim($row[1]),
-     'discipline'=> trim($row[2]),
-]);
+        professor::create([
+            'nom'  => trim($row[0]),
+            'prenom'=> trim($row[1]),
+            'discipline'=> trim($row[2]),
+        ]);
     }}
 }
