@@ -26,11 +26,65 @@ class ExportController extends Controller
         return $pdf->download('planning-soutenances.pdf');
     }
 
-    // Export Planning Word 
+    // Export Planning Word
     public function exportWord()
     {
         $soutenances = Soutenance::with(['student.encadrant', 'juries.professor'])->get();
 
+        // ---- Palettes identiques au PDF ----
+        $palette = [
+            ['FFEB99','7A5F00'], ['C8E6C9','1B5E20'], ['BBDEFB','0D3B6E'],
+            ['F8BBD0','880E4F'], ['D1C4E9','4A148C'], ['B2EBF2','006064'],
+            ['FFE0B2','E65100'], ['DCEDC8','33691E'], ['E1BEE7','6A1B9A'],
+            ['B3E5FC','01579B'], ['FFCCBC','BF360C'], ['FFF9C4','8B6800'],
+            ['CFD8DC','263238'], ['F0F4C3','5C6900'], ['FCE4EC','7B003A'],
+            ['E8F5E9','1B4D1E'], ['E3F2FD','0A2E5C'], ['FFF3E0','7C3000'],
+            ['F3E5F5','4A0072'], ['E0F7FA','004D52'],
+        ];
+        $filiereColors = [
+            'GI'   => ['BBDEFB','0D3B6E'],
+            'DATA' => ['C8E6C9','1B5E20'],
+            'TDAI' => ['F8BBD0','880E4F'],
+        ];
+        $datePalette = [
+            ['FFF9C4','7A5F00'], ['E1F5FE','01579B'], ['F3E5F5','4A0072'],
+            ['E8F5E9','1B4D1E'], ['FCE4EC','7B003A'], ['FFF3E0','7C3000'],
+        ];
+
+        // ---- Construction des maps de couleurs ----
+        $profColors = [];
+        $colorIndex = 0;
+        $dateColors = [];
+        $dateIndex  = 0;
+
+        foreach ($soutenances as $s) {
+            $encKey = trim(($s->student->encadrant->nom ?? '') . ' ' . ($s->student->encadrant->prenom ?? ''));
+            if ($encKey && !isset($profColors[$encKey])) {
+                $profColors[$encKey] = $palette[$colorIndex % count($palette)];
+                $colorIndex++;
+            }
+            if ($s->juries->count() > 0) {
+                $j1Key = trim(($s->juries[0]->professor->nom ?? '') . ' ' . ($s->juries[0]->professor->prenom ?? ''));
+                if ($j1Key && !isset($profColors[$j1Key])) {
+                    $profColors[$j1Key] = $palette[$colorIndex % count($palette)];
+                    $colorIndex++;
+                }
+            }
+            if ($s->juries->count() > 1) {
+                $j2Key = trim(($s->juries[1]->professor->nom ?? '') . ' ' . ($s->juries[1]->professor->prenom ?? ''));
+                if ($j2Key && !isset($profColors[$j2Key])) {
+                    $profColors[$j2Key] = $palette[$colorIndex % count($palette)];
+                    $colorIndex++;
+                }
+            }
+            $dateKey = \Carbon\Carbon::parse($s->date_soutenance)->format('d/m/Y');
+            if (!isset($dateColors[$dateKey])) {
+                $dateColors[$dateKey] = $datePalette[$dateIndex % count($datePalette)];
+                $dateIndex++;
+            }
+        }
+
+        // ---- Construction du document Word ----
         $phpWord = new \PhpOffice\PhpWord\PhpWord();
         $phpWord->setDefaultFontName('Arial');
         $phpWord->setDefaultFontSize(11);
@@ -58,53 +112,105 @@ class ExportController extends Controller
         $table = $section->addTable($styleTable);
         $table->addRow(400);
 
-        foreach (['#', 'Étudiant', 'Filière', 'Date', 'Heure', 'Salle', 'Encadrant', 'Jury'] as $col) {
+        foreach (['#', 'Encadrant', 'Jury 1', 'Jury 2', 'Date', 'Heure', 'Salle', 'Nom étudiant', 'Prénom étudiant', 'Filière'] as $col) {
             $table->addCell(null, $styleHeader)->addText($col, $fontHeader, $centerPar);
         }
 
         foreach ($soutenances as $i => $s) {
-            $encadrant = ($s->student->encadrant->nom ?? '') . ' ' . ($s->student->encadrant->prenom ?? '');
-            $jury = $s->juries->map(fn($j) => ($j->professor->nom ?? '') . ' ' . ($j->professor->prenom ?? ''))->implode(' / ');
-
-            // Vérifier si binôme existe
             $binome = $s->binome_student_id
                 ? \App\Models\Student::find($s->binome_student_id)
                 : null;
 
-            // Préparer nom/prénom/filière avec binôme si existe
-            $nomEtudiant     = ($s->student->prenom ?? '') . ' ' . ($s->student->nom ?? '');
-            $filiereEtudiant = $s->student->filiere ?? '';
+            // Couleur encadrant
+            $encKey   = trim(($s->student->encadrant->nom ?? '') . ' ' . ($s->student->encadrant->prenom ?? ''));
+            $encColor = $profColors[$encKey] ?? ['EEEEEE', '333333'];
 
-            if ($binome) {
-                $nomEtudiant     .= "\n" . ($binome->prenom ?? '') . ' ' . ($binome->nom ?? '');
-                $filiereEtudiant .= "\n" . ($binome->filiere ?? '');
-            }
+            // Couleur jury 1
+            $j1Key   = $s->juries->count() > 0
+                ? trim(($s->juries[0]->professor->nom ?? '') . ' ' . ($s->juries[0]->professor->prenom ?? ''))
+                : '';
+            $j1Color = $j1Key ? ($profColors[$j1Key] ?? ['EEEEEE', '333333']) : ['EEEEEE', '333333'];
+
+            // Couleur jury 2
+            $j2Key   = $s->juries->count() > 1
+                ? trim(($s->juries[1]->professor->nom ?? '') . ' ' . ($s->juries[1]->professor->prenom ?? ''))
+                : '';
+            $j2Color = $j2Key ? ($profColors[$j2Key] ?? ['EEEEEE', '333333']) : ['EEEEEE', '333333'];
+
+            // Couleur date
+            $dateStr   = \Carbon\Carbon::parse($s->date_soutenance)->format('d/m/Y');
+            $dateColor = $dateColors[$dateStr] ?? ['EEEEEE', '333333'];
+
+            // Couleur filière
+            $fil      = $s->student->filiere ?? '';
+            $filColor = $filiereColors[$fil] ?? ['EEEEEE', '333333'];
 
             $table->addRow();
+
+            // # (sans couleur)
             $table->addCell(300)->addText($i + 1, $fontCell, $centerPar);
 
-            // Cellule étudiant — ajouter les 2 lignes si binôme
-            $cellEtudiant = $table->addCell(1800);
-            $cellEtudiant->addText(($s->student->prenom ?? '') . ' ' . ($s->student->nom ?? ''), $fontCell);
-            if ($binome) {
-                $cellEtudiant->addText(($binome->prenom ?? '') . ' ' . ($binome->nom ?? ''), $fontCell);
+            // Encadrant
+            $encadrant = ($s->student->encadrant->nom ?? '') . ' ' . ($s->student->encadrant->prenom ?? '');
+            $table->addCell(1800, ['bgColor' => $encColor[0]])
+                  ->addText($encadrant, array_merge($fontCell, ['color' => $encColor[1], 'bold' => true]));
+
+            // Jury 1
+            $cellJ1 = $table->addCell(1600, ['bgColor' => $j1Color[0]]);
+            if ($s->juries->count() > 0) {
+                $cellJ1->addText(
+                    ($s->juries[0]->professor->nom ?? '-') . ' ' . ($s->juries[0]->professor->prenom ?? ''),
+                    array_merge($fontCell, ['color' => $j1Color[1], 'bold' => true])
+                );
+            } else {
+                $cellJ1->addText('-', $fontCell);
             }
 
-            // Cellule filière — ajouter les 2 lignes si binôme
-            $cellFiliere = $table->addCell(800);
-            $cellFiliere->addText($s->student->filiere ?? '', $fontCell, $centerPar);
-            if ($binome) {
-                $cellFiliere->addText($binome->filiere ?? '', $fontCell, $centerPar);
+            // Jury 2
+            $cellJ2 = $table->addCell(1600, ['bgColor' => $j2Color[0]]);
+            if ($s->juries->count() > 1) {
+                $cellJ2->addText(
+                    ($s->juries[1]->professor->nom ?? '-') . ' ' . ($s->juries[1]->professor->prenom ?? ''),
+                    array_merge($fontCell, ['color' => $j2Color[1], 'bold' => true])
+                );
+            } else {
+                $cellJ2->addText('-', $fontCell);
             }
 
-            $table->addCell(900)->addText($s->date_soutenance ?? '-', $fontCell, $centerPar);
+            // Date
+            $table->addCell(900, ['bgColor' => $dateColor[0]])
+                  ->addText($dateStr, array_merge($fontCell, ['color' => $dateColor[1], 'bold' => true]), $centerPar);
+
+            // Heure (sans couleur)
             $table->addCell(600)->addText($s->heure_debut ?? '-', $fontCell, $centerPar);
+
+            // Salle (sans couleur)
             $table->addCell(700)->addText($s->salle ?? '-', $fontCell, $centerPar);
-            $table->addCell(1800)->addText($encadrant, $fontCell);
-            $table->addCell(2000)->addText($jury, $fontCell);
+
+            // Nom étudiant
+            $cellNom = $table->addCell(1400, ['bgColor' => $filColor[0]]);
+            $cellNom->addText($s->student->nom ?? '-', array_merge($fontCell, ['color' => $filColor[1]]));
+            if ($binome) {
+                $cellNom->addText($binome->nom ?? '', array_merge($fontCell, ['color' => $filColor[1]]));
+            }
+
+            // Prénom étudiant
+            $cellPrenom = $table->addCell(1400, ['bgColor' => $filColor[0]]);
+            $cellPrenom->addText($s->student->prenom ?? '-', array_merge($fontCell, ['color' => $filColor[1]]));
+            if ($binome) {
+                $cellPrenom->addText($binome->prenom ?? '', array_merge($fontCell, ['color' => $filColor[1]]));
+            }
+
+            // Filière
+            $cellFil = $table->addCell(700, ['bgColor' => $filColor[0]]);
+            $cellFil->addText($fil ?: '-', array_merge($fontCell, ['color' => $filColor[1], 'bold' => true]), $centerPar);
+            if ($binome) {
+                $binomeFil      = $binome->filiere ?? '';
+                $binomeFilColor = $filiereColors[$binomeFil] ?? ['EEEEEE', '333333'];
+                $cellFil->addText($binomeFil ?: '-', array_merge($fontCell, ['color' => $binomeFilColor[1], 'bold' => true]), $centerPar);
+            }
         }
 
-        //tempnam pour éviter les problèmes de permission
         $filename = 'planning-soutenances.docx';
         $temp = tempnam(sys_get_temp_dir(), 'planning_') . '.docx';
         \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007')->save($temp);
@@ -120,7 +226,7 @@ class ExportController extends Controller
         return $pdf->download('affectation-encadrants.pdf');
     }
 
-    // Export Affectation Word 
+    // Export Affectation Word
     public function exportAffectationWord()
     {
         $professors = Professor::with('students')->get();
@@ -163,15 +269,13 @@ class ExportController extends Controller
             $table->addCell(5000)->addText($etudiants ?: '-', $fontCell);
         }
 
-        
         $filename = 'affectation-encadrants.docx';
         $temp = tempnam(sys_get_temp_dir(), 'affect_') . '.docx';
         \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007')->save($temp);
         return response()->download($temp, $filename)->deleteFileAfterSend(true);
     }
 
-
-    // Export PV individuel 
+    // Export PV individuel
     public function exportPV($id, $format = 'pdf')
     {
         $soutenance = Soutenance::with([
@@ -241,71 +345,70 @@ class ExportController extends Controller
             $section->addText('Pr. ' . ($j->professor->nom ?? '') . ' ' . ($j->professor->prenom ?? '') . ' (' . $role . ')' . str_repeat(' ', 20) . '________________', ['size' => 11]);
         }
 
-        
         $filename = 'pv-' . $nom . '.docx';
         $temp = tempnam(sys_get_temp_dir(), 'pv_') . '.docx';
         \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007')->save($temp);
         return response()->download($temp, $filename)->deleteFileAfterSend(true);
     }
+
     // Répertoire PV par professeur
-public function pvDirectory()
-{
-    $professors = Professor::with([
-        'students.soutenance.juries.professor',
-        'students.soutenance.student.encadrant',
-    ])
-    ->whereHas('students.soutenance')
-    ->orderBy('nom')
-    ->get();
+    public function pvDirectory()
+    {
+        $professors = Professor::with([
+            'students.soutenance.juries.professor',
+            'students.soutenance.student.encadrant',
+        ])
+        ->whereHas('students.soutenance')
+        ->orderBy('nom')
+        ->get();
 
-    return view('exports.pv_directory', compact('professors'));
-}
-
-// Export ZIP de tous les PV d'un encadrant
-public function exportPVZip($professorId)
-{
-    $professor = Professor::with([
-        'students.soutenance.juries.professor',
-        'students.soutenance.student.encadrant',
-    ])->findOrFail($professorId);
-
-    $zipName = 'PV_' . $professor->nom . '_' . $professor->prenom . '.zip';
-    $zipPath = tempnam(sys_get_temp_dir(), 'pv_zip_') . '.zip';
-
-    $zip = new \ZipArchive();
-    if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-        abort(500, 'Impossible de créer le fichier ZIP.');
+        return view('exports.pv_directory', compact('professors'));
     }
 
-    foreach ($professor->students as $student) {
-        $soutenance = $student->soutenance;
-        if (!$soutenance) {
-            continue;
+    // Export ZIP de tous les PV d'un encadrant
+    public function exportPVZip($professorId)
+    {
+        $professor = Professor::with([
+            'students.soutenance.juries.professor',
+            'students.soutenance.student.encadrant',
+        ])->findOrFail($professorId);
+
+        $zipName = 'PV_' . $professor->nom . '_' . $professor->prenom . '.zip';
+        $zipPath = tempnam(sys_get_temp_dir(), 'pv_zip_') . '.zip';
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            abort(500, 'Impossible de créer le fichier ZIP.');
         }
 
-        // Charger la soutenance complète avec les relations pour le blade
-        $soutenanceFull = Soutenance::with([
-            'student.encadrant',
-            'juries.professor',
-        ])->find($soutenance->id);
+        foreach ($professor->students as $student) {
+            $soutenance = $student->soutenance;
+            if (!$soutenance) {
+                continue;
+            }
 
-        if (!$soutenanceFull) {
-            continue;
+            $soutenanceFull = Soutenance::with([
+                'student.encadrant',
+                'juries.professor',
+            ])->find($soutenance->id);
+
+            if (!$soutenanceFull) {
+                continue;
+            }
+
+            $pdf = Pdf::loadView('exports.pv', ['soutenance' => $soutenanceFull])
+                      ->setPaper('a4', 'portrait');
+
+            $pdfContent = $pdf->output();
+            $filename   = 'PV_' . ($student->nom ?? 'etudiant') . '_' . ($student->prenom ?? '') . '.pdf';
+
+            $zip->addFromString($filename, $pdfContent);
         }
 
-        $pdf = Pdf::loadView('exports.pv', ['soutenance' => $soutenanceFull])
-                  ->setPaper('a4', 'portrait');
+        $zip->close();
 
-        $pdfContent = $pdf->output();
-        $filename   = 'PV_' . ($student->nom ?? 'etudiant') . '_' . ($student->prenom ?? '') . '.pdf';
-
-        $zip->addFromString($filename, $pdfContent);
+        return response()->download($zipPath, $zipName, [
+            'Content-Type' => 'application/zip',
+        ])->deleteFileAfterSend(true);
     }
-
-    $zip->close();
-
-    return response()->download($zipPath, $zipName, [
-        'Content-Type' => 'application/zip',
-    ])->deleteFileAfterSend(true);
-}
 }
