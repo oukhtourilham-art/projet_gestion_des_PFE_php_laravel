@@ -12,8 +12,12 @@ class PlanningController extends Controller
     public function saveDates(Request $request)
     {
         $request->validate([
-            'date_debut' => 'required|date',
-            'date_fin'   => 'required|date|after_or_equal:date_debut',
+            'date_debut'             => 'required|date',
+            'date_fin'               => 'required|date|after_or_equal:date_debut',
+            'start_time'             => 'nullable',
+            'end_time'               => 'nullable',
+            'slot_duration_minutes'  => 'nullable|integer|min:30',
+            'break_duration_minutes' => 'nullable|integer|min:0',
         ]);
 
         $debut = Carbon::parse($request->date_debut);
@@ -26,15 +30,40 @@ class PlanningController extends Controller
             $current->addDay();
         }
 
+        // Calcul du nombre de créneaux par jour
+        $startTime    = $request->input('start_time', '09:00');
+        $endTime      = $request->input('end_time', '17:00');
+        $slotDuration = (int) $request->input('slot_duration_minutes', 60);
+        $breakDuration= (int) $request->input('break_duration_minutes', 0);
+
+        $startMinutes = (int) explode(':', $startTime)[0] * 60 + (int) explode(':', $startTime)[1];
+        $endMinutes   = (int) explode(':', $endTime)[0] * 60   + (int) explode(':', $endTime)[1];
+        $totalMinutes = $endMinutes - $startMinutes;
+        $slotTotal    = $slotDuration + $breakDuration;
+        $nbCreneaux   = $slotTotal > 0 ? (int) floor($totalMinutes / $slotTotal) : 4;
+
+        // Générer les créneaux réels pour le planning
+        $timeSlots = [];
+        $current = $startMinutes;
+        while (($current + $slotDuration) <= $endMinutes) {
+            $debutH = sprintf('%02d:%02d', intdiv($current, 60), $current % 60);
+            $finH   = sprintf('%02d:%02d', intdiv($current + $slotDuration, 60), ($current + $slotDuration) % 60);
+            $timeSlots[] = ['debut' => $debutH, 'fin' => $finH];
+            $current += $slotDuration + $breakDuration;
+        }
+
         session([
-            'date_debut'        => $request->date_debut,
-            'date_fin'          => $request->date_fin,
-            'jours_soutenance'  => $jours,
+            'date_debut'       => $request->date_debut,
+            'date_fin'         => $request->date_fin,
+            'jours_soutenance' => $jours,
+            'nb_creneaux'      => $nbCreneaux,
+            'time_slots'       => $timeSlots,   // utilisé par generatePlanning
         ]);
 
         return redirect()->back()->with('success',
             'Dates enregistrées : ' . count($jours) . ' jour(s) du ' .
-            $debut->format('d/m/Y') . ' au ' . $fin->format('d/m/Y')
+            $debut->format('d/m/Y') . ' au ' . $fin->format('d/m/Y') .
+            ' — ' . $nbCreneaux . ' créneau(x)/jour'
         );
     }
 
@@ -71,18 +100,25 @@ class PlanningController extends Controller
         $binomesTraites = [];
         $groupes = collect();
 
-        // Mélanger équitablement par filière
-        $gi   = Student::where('filiere', 'GI')->get()->shuffle();
-        $data = Student::where('filiere', 'DATA')->get()->shuffle();
-        $tdai = Student::where('filiere', 'TDAI')->get()->shuffle();
+        // Filières dynamiques — pas de liste hardcodée
+        $filieres = Student::whereNotNull('filiere')
+            ->distinct()
+            ->pluck('filiere')
+            ->values();
 
-        $max = max($gi->count(), $data->count(), $tdai->count());
+        $groupesParFiliere = $filieres->mapWithKeys(function ($f) {
+            return [$f => Student::where('filiere', $f)->get()->shuffle()];
+        });
+
+        $max = $groupesParFiliere->map->count()->max() ?? 0;
         $studentsMelanges = collect();
 
         for ($i = 0; $i < $max; $i++) {
-            if ($gi->has($i))   $studentsMelanges->push($gi[$i]);
-            if ($data->has($i)) $studentsMelanges->push($data[$i]);
-            if ($tdai->has($i)) $studentsMelanges->push($tdai[$i]);
+            foreach ($groupesParFiliere as $groupe) {
+                if ($groupe->has($i)) {
+                    $studentsMelanges->push($groupe[$i]);
+                }
+            }
         }
 
         foreach ($studentsMelanges as $student) {
@@ -125,12 +161,12 @@ class PlanningController extends Controller
         
 
         // ETAPE 2 : Créneaux
-        $timeSlots = [
+        $timeSlots = session('time_slots', [
             ["debut" => "09:00", "fin" => "10:00"],
             ["debut" => "11:00", "fin" => "12:00"],
             ["debut" => "14:00", "fin" => "15:00"],
             ["debut" => "16:00", "fin" => "17:00"],
-        ];
+        ]);
 
         $salles = session('salles', [
             'Amphi A', 'Salle 4 AB', 'Salle 5 AB',
