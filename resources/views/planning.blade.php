@@ -4,15 +4,105 @@
 
 @section('content')
 
-<h2 class="mb-4">Planning des soutenances</h2>
+@php
+    $palette = [
+        ['#FFEB99','#7A5F00'], ['#C8E6C9','#1B5E20'], ['#BBDEFB','#0D3B6E'],
+        ['#F8BBD0','#880E4F'], ['#D1C4E9','#4A148C'], ['#B2EBF2','#006064'],
+        ['#FFE0B2','#E65100'], ['#DCEDC8','#33691E'], ['#E1BEE7','#6A1B9A'],
+        ['#B3E5FC','#01579B'], ['#FFCCBC','#BF360C'], ['#FFF9C4','#8B6800'],
+        ['#CFD8DC','#263238'], ['#F0F4C3','#5C6900'], ['#FCE4EC','#7B003A'],
+        ['#E8F5E9','#1B4D1E'], ['#E3F2FD','#0A2E5C'], ['#FFF3E0','#7C3000'],
+        ['#F3E5F5','#4A0072'], ['#E0F7FA','#004D52'],
+    ];
+    $profColors = [];
+    $colorIndex = 0;
+
+    foreach ($soutenances as $s) {
+        $encKey = trim(($s->student->encadrant->nom ?? '') . ' ' . ($s->student->encadrant->prenom ?? ''));
+        if ($encKey && !isset($profColors[$encKey])) {
+            $profColors[$encKey] = $palette[$colorIndex % count($palette)];
+            $colorIndex++;
+        }
+        if ($s->juries->count() > 0) {
+            $j1Key = trim(($s->juries[0]->professor->nom ?? '') . ' ' . ($s->juries[0]->professor->prenom ?? ''));
+            if ($j1Key && !isset($profColors[$j1Key])) {
+                $profColors[$j1Key] = $palette[$colorIndex % count($palette)];
+                $colorIndex++;
+            }
+        }
+        if ($s->juries->count() > 1) {
+            $j2Key = trim(($s->juries[1]->professor->nom ?? '') . ' ' . ($s->juries[1]->professor->prenom ?? ''));
+            if ($j2Key && !isset($profColors[$j2Key])) {
+                $profColors[$j2Key] = $palette[$colorIndex % count($palette)];
+                $colorIndex++;
+            }
+        }
+    }
+
+    $filiereColors = [
+        'GI'   => ['#BBDEFB', '#0D3B6E'],
+        'DATA' => ['#C8E6C9', '#1B5E20'],
+        'TDAI' => ['#F8BBD0', '#880E4F'],
+    ];
+
+    $dateColors = [];
+    $datePalette = [
+        ['#FFF9C4','#7A5F00'], ['#E1F5FE','#01579B'], ['#F3E5F5','#4A0072'],
+        ['#E8F5E9','#1B4D1E'], ['#FCE4EC','#7B003A'], ['#FFF3E0','#7C3000'],
+    ];
+    $dateIndex = 0;
+    foreach ($soutenances as $s) {
+        $dateKey = \Carbon\Carbon::parse($s->date_soutenance)->format('d/m/Y');
+        if (!isset($dateColors[$dateKey])) {
+            $dateColors[$dateKey] = $datePalette[$dateIndex % count($datePalette)];
+            $dateIndex++;
+        }
+    }
+@endphp
+
+<style>
+    .planning-wrapper {
+        display: flex;
+        justify-content: center;
+        padding: 20px 0;
+    }
+    .planning-table {
+        border-collapse: collapse;
+        font-size: 13px;
+        text-align: center;
+    }
+    .planning-table th {
+        background-color: #1e3a5f;
+        color: white;
+        padding: 10px 14px;
+        border: 1px solid #ccc;
+        font-weight: 600;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+    }
+    .planning-table td {
+        border: 1px solid #ccc;
+        padding: 8px 12px;
+        vertical-align: middle;
+        font-weight: 500;
+        font-size: 12.5px;
+    }
+    .planning-table td.num {
+        background: #f5f5f5;
+        color: #444;
+        font-weight: 700;
+        min-width: 30px;
+    }
+</style>
+
+<h2 class="mb-4 text-center">Planning des soutenances</h2>
 
 @if($soutenances->isEmpty())
     <div class="alert alert-info">Aucune soutenance planifiée pour le moment.</div>
 @else
-    <div class="table-responsive">
-        <table class="table table-bordered table-striped table-hover align-middle" 
-               style="font-size: 13px; min-width: 900px;">
-            <thead class="table-dark text-center">
+    <div class="planning-wrapper">
+        <table class="planning-table">
+            <thead>
                 <tr>
                     <th>#</th>
                     <th>Encadrant</th>
@@ -26,65 +116,89 @@
                     <th>Filière</th>
                 </tr>
             </thead>
-            <tbody class="text-center">
+            <tbody>
                 @foreach($soutenances as $i => $s)
+                @php
+                    $encKey   = trim(($s->student->encadrant->nom ?? '') . ' ' . ($s->student->encadrant->prenom ?? ''));
+                    $encColor = $profColors[$encKey] ?? ['#eeeeee','#333333'];
+
+                    $j1Key   = $s->juries->count() > 0
+                                ? trim(($s->juries[0]->professor->nom ?? '') . ' ' . ($s->juries[0]->professor->prenom ?? ''))
+                                : '';
+                    $j1Color = $j1Key ? ($profColors[$j1Key] ?? ['#eeeeee','#333333']) : ['#eeeeee','#333333'];
+
+                    $j2Key   = $s->juries->count() > 1
+                                ? trim(($s->juries[1]->professor->nom ?? '') . ' ' . ($s->juries[1]->professor->prenom ?? ''))
+                                : '';
+                    $j2Color = $j2Key ? ($profColors[$j2Key] ?? ['#eeeeee','#333333']) : ['#eeeeee','#333333'];
+
+                    $dateStr   = \Carbon\Carbon::parse($s->date_soutenance)->format('d/m/Y');
+                    $dateColor = $dateColors[$dateStr] ?? ['#eeeeee','#333333'];
+
+                    $fil      = $s->student->filiere ?? '';
+                    $filColor = $filiereColors[$fil] ?? ['#eeeeee','#333333'];
+
+                    // Binôme
+                    $binome = $s->binome_student_id ? \App\Models\Student::find($s->binome_student_id) : null;
+                    $binomeFil      = $binome->filiere ?? '';
+                    $binomeFilColor = $filiereColors[$binomeFil] ?? ['#eeeeee','#333333'];
+                @endphp
                 <tr>
-                    <td>{{ $i + 1 }}</td>
+                    <td class="num">{{ $i + 1 }}</td>
 
                     {{-- Encadrant --}}
-                    <td>
+                    <td style="background: {{ $encColor[0] }}; color: {{ $encColor[1] }};">
                         {{ $s->student->encadrant->nom ?? '-' }}
                         {{ $s->student->encadrant->prenom ?? '' }}
                     </td>
 
                     {{-- Jury 1 --}}
-                    <td>
+                    <td style="background: {{ $j1Color[0] }}; color: {{ $j1Color[1] }};">
                         @if($s->juries->count() > 0)
                             {{ $s->juries[0]->professor->nom ?? '-' }}
                             {{ $s->juries[0]->professor->prenom ?? '' }}
-                        @else
-                            -
+                        @else -
                         @endif
                     </td>
 
                     {{-- Jury 2 --}}
-                    <td>
+                    <td style="background: {{ $j2Color[0] }}; color: {{ $j2Color[1] }};">
                         @if($s->juries->count() > 1)
                             {{ $s->juries[1]->professor->nom ?? '-' }}
                             {{ $s->juries[1]->professor->prenom ?? '' }}
-                        @else
-                            -
+                        @else -
                         @endif
                     </td>
 
-                    <td>{{ \Carbon\Carbon::parse($s->date_soutenance)->format('d/m/Y') ?? '-' }}</td>
+                    {{-- Date --}}
+                    <td style="background: {{ $dateColor[0] }}; color: {{ $dateColor[1] }}; font-weight: 700;">
+                        {{ $dateStr }}
+                    </td>
+
                     <td>{{ \Carbon\Carbon::parse($s->heure_debut)->format('H:i') ?? '-' }}</td>
                     <td>{{ $s->salle ?? '-' }}</td>
-                    <td>
+
+                    {{-- Nom étudiant (couleur filière) --}}
+                    <td style="background: {{ $filColor[0] }}; color: {{ $filColor[1] }};">
                         {{ $s->student->nom ?? '-' }}
-                        @if($s->binome_student_id)
-                            @php $binome = \App\Models\Student::find($s->binome_student_id); @endphp
-                            @if($binome)
-                                <br>{{ $binome->nom }}
-                            @endif
+                        @if($binome)
+                            <br><span style="color: {{ $binomeFilColor[1] }};">{{ $binome->nom }}</span>
                         @endif
                     </td>
-                    <td>
+
+                    {{-- Prénom étudiant (couleur filière) --}}
+                    <td style="background: {{ $filColor[0] }}; color: {{ $filColor[1] }};">
                         {{ $s->student->prenom ?? '-' }}
-                        @if($s->binome_student_id)
-                            @php $binome = \App\Models\Student::find($s->binome_student_id); @endphp
-                            @if($binome)
-                                <br>{{ $binome->prenom }}
-                            @endif
+                        @if($binome)
+                            <br><span style="color: {{ $binomeFilColor[1] }};">{{ $binome->prenom }}</span>
                         @endif
                     </td>
-                    <td>
-                        {{ $s->student->filiere ?? '-' }}
-                        @if($s->binome_student_id)
-                            @php $binome = \App\Models\Student::find($s->binome_student_id); @endphp
-                            @if($binome)
-                                <br>{{ $binome->filiere }}
-                            @endif
+
+                    {{-- Filière --}}
+                    <td style="background: {{ $filColor[0] }}; color: {{ $filColor[1] }}; font-weight: 700;">
+                        {{ $fil ?: '-' }}
+                        @if($binome)
+                            <br><span style="background: {{ $binomeFilColor[0] }}; color: {{ $binomeFilColor[1] }}; font-weight: 700;">{{ $binomeFil }}</span>
                         @endif
                     </td>
                 </tr>

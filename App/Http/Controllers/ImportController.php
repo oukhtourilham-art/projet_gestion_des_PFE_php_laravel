@@ -67,7 +67,7 @@ class ImportController extends Controller
         // Vérification que les dates sont enregistrées
         if ($nbJours == 0) {
             return redirect()->back()
-                ->with('error', '❌ Veuillez d\'abord enregistrer les dates de soutenance avant de choisir les salles.');
+                ->with('error', 'Veuillez d\'abord enregistrer les dates de soutenance avant de choisir les salles.');
         }
 
         // Calcul des créneaux disponibles
@@ -76,7 +76,7 @@ class ImportController extends Controller
 
         if ($nbEtudiants == 0) {
             return redirect()->back()
-                ->with('error', '❌ Aucun étudiant trouvé. Veuillez d\'abord importer les étudiants.');
+                ->with('error', ' Aucun étudiant trouvé. Veuillez d\'abord importer les étudiants.');
         }
 
         // Vérification principale
@@ -84,7 +84,7 @@ class ImportController extends Controller
             $sallesNecessaires = ceil($nbEtudiants / (5 * $nbJours));
             return redirect()->back()
                 ->with('error',
-                    '❌ Salles insuffisantes ! ' .
+                    'Salles insuffisantes ! ' .
                     'Avec ' . $nbSalles . ' salle(s) × 5 créneaux × ' . $nbJours . ' jour(s) = ' .
                     $totalCreneaux . ' créneaux disponibles, ' .
                     'mais vous avez ' . $nbEtudiants . ' étudiants. ' .
