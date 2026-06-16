@@ -247,4 +247,65 @@ class ExportController extends Controller
         \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007')->save($temp);
         return response()->download($temp, $filename)->deleteFileAfterSend(true);
     }
+    // Répertoire PV par professeur
+public function pvDirectory()
+{
+    $professors = Professor::with([
+        'students.soutenance.juries.professor',
+        'students.soutenance.student.encadrant',
+    ])
+    ->whereHas('students.soutenance')
+    ->orderBy('nom')
+    ->get();
+
+    return view('exports.pv_directory', compact('professors'));
+}
+
+// Export ZIP de tous les PV d'un encadrant
+public function exportPVZip($professorId)
+{
+    $professor = Professor::with([
+        'students.soutenance.juries.professor',
+        'students.soutenance.student.encadrant',
+    ])->findOrFail($professorId);
+
+    $zipName = 'PV_' . $professor->nom . '_' . $professor->prenom . '.zip';
+    $zipPath = tempnam(sys_get_temp_dir(), 'pv_zip_') . '.zip';
+
+    $zip = new \ZipArchive();
+    if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+        abort(500, 'Impossible de créer le fichier ZIP.');
+    }
+
+    foreach ($professor->students as $student) {
+        $soutenance = $student->soutenance;
+        if (!$soutenance) {
+            continue;
+        }
+
+        // Charger la soutenance complète avec les relations pour le blade
+        $soutenanceFull = Soutenance::with([
+            'student.encadrant',
+            'juries.professor',
+        ])->find($soutenance->id);
+
+        if (!$soutenanceFull) {
+            continue;
+        }
+
+        $pdf = Pdf::loadView('exports.pv', ['soutenance' => $soutenanceFull])
+                  ->setPaper('a4', 'portrait');
+
+        $pdfContent = $pdf->output();
+        $filename   = 'PV_' . ($student->nom ?? 'etudiant') . '_' . ($student->prenom ?? '') . '.pdf';
+
+        $zip->addFromString($filename, $pdfContent);
+    }
+
+    $zip->close();
+
+    return response()->download($zipPath, $zipName, [
+        'Content-Type' => 'application/zip',
+    ])->deleteFileAfterSend(true);
+}
 }

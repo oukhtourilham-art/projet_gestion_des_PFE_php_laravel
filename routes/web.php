@@ -48,6 +48,8 @@ Route::get('/export/pv/filiere/{filiere}/{format}', [ExportController::class, 'e
 
 // Export PV individuel
 Route::get('/export/pv/{id}/{format}', [ExportController::class, 'exportPV'])->name('export.pv');
+Route::get('/export/pv/directory', [ExportController::class, 'pvDirectory'])->name('export.pv.directory');
+Route::get('/export/pv/zip/{professorId}', [ExportController::class, 'exportPVZip'])->name('export.pv.zip');
 
 // Gener tout :
 Route::get('/generer-tout', [AffectationController::class, 'genererTout']);

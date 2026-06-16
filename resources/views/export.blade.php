@@ -28,6 +28,12 @@
 
     {{--Export PV individuels --}}
     <h2>Export PV individuels</h2>
+    <p>
+    <a href="{{ route('export.pv.directory') }}"
+       style="font-weight: bold; color: #1a3a5c;">
+        Voir le répertoire des PV par encadrant
+    </a>
+</p>
 
     {{-- Barre de recherche --}}
     <br>
