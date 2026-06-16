@@ -42,7 +42,6 @@ class ImportController extends Controller
 
         $path = $request->file('fichier')->getPathname();
 
-<<<<<<< HEAD
         return redirect()->back()->with('success',
             'Étudiants importés avec succès ! (' . Student::count() . ' étudiants au total)');
     }
@@ -58,58 +57,6 @@ class ImportController extends Controller
 
         return redirect()->back()->with('success',
             'Professeurs importés avec succès ! (' . Professor::count() . ' professeurs au total)');
-    }
-
-    // Enregistrer les salles sélectionnées
-    public function saveSalles(Request $request)
-    {
-        $request->validate([
-            'salles' => 'required|array|min:1',
-        ]);
-
-        $salles     = $request->salles;
-        $nbSalles   = count($salles);
-        $nbJours    = count(session('jours_soutenance', []));
-        $nbEtudiants = \App\Models\Student::count();
-
-        // Vérification que les dates sont enregistrées
-        if ($nbJours == 0) {
-            return redirect()->back()
-                ->with('error', 'Veuillez d\'abord enregistrer les dates de soutenance avant de choisir les salles.');
-=======
-        try {
-            $spreadsheet = IOFactory::load($path);
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Impossible de lire le fichier : ' . $e->getMessage());
->>>>>>> bc857cde4a18497a97e97134a791ece973bdc0fe
-        }
-
-        $nbEtudiants  = 0;
-        $nbProfs      = 0;
-        $filieresTrouvees = [];
-
-        foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
-            $sheetName = trim($sheet->getTitle());
-
-            if (strtolower($sheetName) === 'profs') {
-                $nbProfs = $this->importProfsFromSheet($sheet);
-                continue;
-            }
-
-            $filiere = strtoupper($sheetName); // normalise : GI, DATA, TDIA, etc.
-            $filieresTrouvees[] = $filiere;
-            $nbEtudiants += $this->importStudentsFromSheet($sheet, $filiere);
-        }
-
-        $msg = "✅ Import terminé — {$nbEtudiants} étudiant(s) importé(s)";
-        if ($nbProfs > 0) {
-            $msg .= ", {$nbProfs} professeur(s) importé(s)";
-        }
-        if (!empty($filieresTrouvees)) {
-            $msg .= ". Filières détectées : " . implode(', ', $filieresTrouvees);
-        }
-
-        return redirect()->back()->with('success', $msg);
     }
 
     private function importStudentsFromSheet($sheet, string $filiere): int
@@ -189,17 +136,12 @@ class ImportController extends Controller
 
         if ($nbEtudiants == 0) {
             return redirect()->back()
-<<<<<<< HEAD
-                ->with('error', ' Aucun étudiant trouvé. Veuillez d\'abord importer les étudiants.');
-=======
                 ->with('error', 'Aucun étudiant trouvé. Importez d\'abord les étudiants.');
->>>>>>> bc857cde4a18497a97e97134a791ece973bdc0fe
         }
 
         $totalCreneaux = $nbCreneauxParJour * $nbSalles * $nbJours;
 
         if ($totalCreneaux < $nbEtudiants) {
-<<<<<<< HEAD
             $sallesNecessaires = ceil($nbEtudiants / (5 * $nbJours));
             return redirect()->back()
                 ->with('error',
@@ -209,7 +151,6 @@ class ImportController extends Controller
                     'mais vous avez ' . $nbEtudiants . ' étudiants. ' .
                     'Il faut au minimum ' . $sallesNecessaires . ' salle(s).'
                 );
-=======
             $sallesNecessaires = ceil($nbEtudiants / ($nbCreneauxParJour * $nbJours));
             return redirect()->back()->with('error',
                 'Salles insuffisantes ! ' .
@@ -217,7 +158,6 @@ class ImportController extends Controller
                 $totalCreneaux . ' créneaux, mais ' . $nbEtudiants . ' étudiants. ' .
                 'Minimum : ' . $sallesNecessaires . ' salle(s).'
             );
->>>>>>> bc857cde4a18497a97e97134a791ece973bdc0fe
         }
 
         session(['salles' => $salles]);
