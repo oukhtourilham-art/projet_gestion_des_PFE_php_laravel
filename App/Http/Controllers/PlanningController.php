@@ -96,11 +96,11 @@ class PlanningController extends Controller
         Soutenance::truncate();
         \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        // ETAPE 1 : Mélanger et regrouper les binômes
+    
         $binomesTraites = [];
         $groupes = collect();
 
-        // Filières dynamiques — pas de liste hardcodée
+    
         $filieres = Student::whereNotNull('filiere')
             ->distinct()
             ->pluck('filiere')
@@ -122,8 +122,7 @@ class PlanningController extends Controller
         }
 
         foreach ($studentsMelanges as $student) {
-
-                if (in_array($student->id, $binomesTraites)) continue;
+            if (in_array($student->id, $binomesTraites)) continue;
 
                 // Vérifier binôme avec == 1
                 if ($student->binome == 1 && !empty($student->sujet)) {
@@ -143,13 +142,13 @@ class PlanningController extends Controller
                         $binomesTraites[] = $student->id;
                         $binomesTraites[] = $partner->id;
 
-                        // LOG pour vérifier
+                        // LOG pour verifier
                         \Log::info('Binôme détecté: ' . $student->nom . ' + ' . $partner->nom);
                         continue;
                     }
                 }
 
-                // Étudiant seul
+                // etudiant seul
                 $groupes->push([
                     'etudiants'    => collect([$student]),
                     'langue'       => $student->langue ?? 'FR',
@@ -158,9 +157,7 @@ class PlanningController extends Controller
                 $binomesTraites[] = $student->id;
         }
 
-        
-
-        // ETAPE 2 : Créneaux
+        // ETAPE 2 : Creneaux
         $timeSlots = session('time_slots', [
             ["debut" => "09:00", "fin" => "10:00"],
             ["debut" => "11:00", "fin" => "12:00"],
@@ -198,7 +195,7 @@ class PlanningController extends Controller
             }
         }
 
-        // ETAPE 3 : Assigner un créneau à chaque groupe
+        // ETAPE 3 : Assigner un creneau pour chaque groupe
         $affectes = 0;
         $erreurs  = [];
 
@@ -214,7 +211,7 @@ class PlanningController extends Controller
             $encadrant_id = $groupe['encadrant_id'];
             $langue       = strtoupper($groupe['langue'] ?? 'FR');
 
-            // Profs occupés dans ce créneau
+            // Profs occupees dans ce creneau
             $soutenancesExistantes = Soutenance::where('date_soutenance', $creneau['date'])
                 ->where('heure_debut', $creneau['debut'])
                 ->get();

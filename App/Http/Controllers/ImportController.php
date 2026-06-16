@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Professor;
 use App\Models\Student;
+use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ImportController extends Controller
@@ -18,8 +19,8 @@ class ImportController extends Controller
         ];
 
         $sallesSelectionnees = session('salles', $sallesDisponibles);
-        $planningConfig      = null;   
-        $nbCreneaux          = 0;  
+        $planningConfig      = null;
+        $nbCreneaux          = session('nb_creneaux', null);
 
         $filieres = Student::whereNotNull('filiere')
             ->distinct()
@@ -33,7 +34,6 @@ class ImportController extends Controller
         ));
     }
 
-    //Import unifié : étudiants + profs 
     public function importUnified(Request $request)
     {
         $request->validate([
@@ -42,35 +42,125 @@ class ImportController extends Controller
 
         $path = $request->file('fichier')->getPathname();
 
-        return redirect()->back()->with('success',
-            'Étudiants importés avec succès ! (' . Student::count() . ' étudiants au total)');
+        try {
+            $spreadsheet = IOFactory::load($path);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Impossible de lire le fichier : ' . $e->getMessage());
+        }
+
+        $nbEtudiants  = 0;
+        $nbProfs      = 0;
+        $filieresTrouvees = [];
+
+        foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
+            $sheetName = trim($sheet->getTitle());
+
+            if (strtolower($sheetName) === 'profs') {
+                $nbProfs = $this->importProfsFromSheet($sheet);
+                continue;
+            }
+
+            $filiere = strtoupper($sheetName);
+            $filieresTrouvees[] = $filiere;
+            $nbEtudiants += $this->importStudentsFromSheet($sheet, $filiere);
+        }
+
+        $msg = "✅ Import terminé — {$nbEtudiants} étudiant(s) importé(s)";
+        if ($nbProfs > 0) {
+            $msg .= ", {$nbProfs} professeur(s) importé(s)";
+        }
+        if (!empty($filieresTrouvees)) {
+            $msg .= ". Filières détectées : " . implode(', ', $filieresTrouvees);
+        }
+
+        return redirect()->back()->with('success', $msg);
     }
 
-    // Import professeurs 
     public function importProfessors(Request $request)
     {
         $request->validate([
             'excel_file' => 'required|file|mimes:xlsx,xls',
         ]);
 
-        Excel::import(new ProfessorsImport, $request->file('excel_file'));
+        Excel::import(new \App\Imports\ProfessorsImport, $request->file('excel_file'));
 
         return redirect()->back()->with('success',
             'Professeurs importés avec succès ! (' . Professor::count() . ' professeurs au total)');
     }
 
+    public function saveSalles(Request $request)
+    {
+        $request->validate([
+            'salles' => 'required|array|min:1',
+        ]);
+
+        $salles      = $request->salles;
+        $nbSalles    = count($salles);
+        $nbJours     = count(session('jours_soutenance', []));
+        $nbCreneauxParJour = session('nb_creneaux');
+
+        if ($nbJours == 0) {
+            return redirect()->back()
+                ->with('error', 'Veuillez d\'abord enregistrer les dates de soutenance.');
+        }
+
+        if ($nbCreneauxParJour === null || $nbCreneauxParJour == 0) {
+            return redirect()->back()
+                ->with('error', 'Configuration des créneaux manquante. Veuillez d\'abord configurer les dates et créneaux.');
+        }
+
+        $nbGroupes = $this->estimateGroupCount();
+        if ($nbGroupes == 0) {
+            return redirect()->back()
+                ->with('error', 'Aucun étudiant trouvé. Importez d\'abord les étudiants.');
+        }
+
+        $totalCreneaux = $nbCreneauxParJour * $nbSalles * $nbJours;
+
+        if ($totalCreneaux < $nbGroupes) {
+            $sallesNecessaires = ceil($nbGroupes / ($nbCreneauxParJour * $nbJours));
+            return redirect()->back()
+                ->with('error',
+                    'Salles insuffisantes ! ' .
+                    $nbSalles . ' salle(s) × ' . $nbCreneauxParJour . ' créneaux/jour × ' . $nbJours . ' jour(s) = ' .
+                    $totalCreneaux . ' créneaux disponibles, ' .
+                    'mais vous avez ' . $nbGroupes . ' groupes à soutenir. ' .
+                    'Il faut au minimum ' . $sallesNecessaires . ' salle(s).'
+                );
+        }
+
+        session(['salles' => $salles]);
+
+        return redirect()->back()->with('success',
+            '✅ ' . $nbSalles . ' salle(s) enregistrée(s) ! ' .
+            $totalCreneaux . ' créneaux pour ' . $nbGroupes . ' groupes ' .
+            '(' . ($totalCreneaux - $nbGroupes) . ' libre(s)).'
+        );
+    }
+
+    public function addSalle(Request $request)
+    {
+        $request->validate(['nouvelle_salle' => 'required|string|max:50']);
+        $salles   = session('salles', []);
+        $nouvelle = trim($request->nouvelle_salle);
+        if (!in_array($nouvelle, $salles)) {
+            $salles[] = $nouvelle;
+            session(['salles' => $salles]);
+        }
+        return redirect()->back()->with('success', 'Salle "' . $nouvelle . '" ajoutée !');
+    }
+
     private function importStudentsFromSheet($sheet, string $filiere): int
     {
-        $rows = $sheet->toArray(null, true, true, true); // associatif par lettre colonne
+        $rows = $sheet->toArray(null, true, true, true);
         $count = 0;
         $isFirst = true;
 
         foreach ($rows as $row) {
-            // Ignorer la ligne d'en-tête
             if ($isFirst) { $isFirst = false; continue; }
 
             $cne = trim($row['A'] ?? '');
-            if (empty($cne)) continue; // ligne vide
+            if (empty($cne)) continue;
 
             $binomeRaw = strtolower(trim($row['H'] ?? 'false'));
             $binome    = in_array($binomeRaw, ['true', '1', 'oui', 'yes']) ? 1 : 0;
@@ -116,68 +206,16 @@ class ImportController extends Controller
         return $count;
     }
 
-    // Salles (inchangé sauf signature)
-    public function saveSalles(Request $request)
+    private function estimateGroupCount(): int
     {
-        $request->validate(['salles' => 'required|array|min:1']);
-
-        $salles      = $request->salles;
-        $nbSalles    = count($salles);
-        $nbJours     = count(session('jours_soutenance', []));
-        $nbEtudiants = Student::count();
-
-        // Nombre de créneaux par jour — lu depuis la session (sauvé par le form des dates)
-        $nbCreneauxParJour = session('nb_creneaux', 4);
-
-        if ($nbJours == 0) {
-            return redirect()->back()
-                ->with('error', 'Veuillez d\'abord enregistrer les dates de soutenance.');
+        $totalStudents = Student::count();
+        if ($totalStudents == 0) {
+            return 0;
         }
 
-        if ($nbEtudiants == 0) {
-            return redirect()->back()
-                ->with('error', 'Aucun étudiant trouvé. Importez d\'abord les étudiants.');
-        }
+        $binomes = Student::where('binome', 1)->count();
+        $solos = Student::where('binome', 0)->count();
 
-        $totalCreneaux = $nbCreneauxParJour * $nbSalles * $nbJours;
-
-        if ($totalCreneaux < $nbEtudiants) {
-            $sallesNecessaires = ceil($nbEtudiants / (5 * $nbJours));
-            return redirect()->back()
-                ->with('error',
-                    'Salles insuffisantes ! ' .
-                    'Avec ' . $nbSalles . ' salle(s) × 5 créneaux × ' . $nbJours . ' jour(s) = ' .
-                    $totalCreneaux . ' créneaux disponibles, ' .
-                    'mais vous avez ' . $nbEtudiants . ' étudiants. ' .
-                    'Il faut au minimum ' . $sallesNecessaires . ' salle(s).'
-                );
-            $sallesNecessaires = ceil($nbEtudiants / ($nbCreneauxParJour * $nbJours));
-            return redirect()->back()->with('error',
-                'Salles insuffisantes ! ' .
-                $nbSalles . ' salle(s) × ' . $nbCreneauxParJour . ' créneaux × ' . $nbJours . ' jour(s) = ' .
-                $totalCreneaux . ' créneaux, mais ' . $nbEtudiants . ' étudiants. ' .
-                'Minimum : ' . $sallesNecessaires . ' salle(s).'
-            );
-        }
-
-        session(['salles' => $salles]);
-
-        return redirect()->back()->with('success',
-            '✅ ' . $nbSalles . ' salle(s) enregistrée(s) ! ' .
-            $totalCreneaux . ' créneaux pour ' . $nbEtudiants . ' étudiants ' .
-            '(' . ($totalCreneaux - $nbEtudiants) . ' libre(s)).'
-        );
-    }
-
-    public function addSalle(Request $request)
-    {
-        $request->validate(['nouvelle_salle' => 'required|string|max:50']);
-        $salles   = session('salles', []);
-        $nouvelle = trim($request->nouvelle_salle);
-        if (!in_array($nouvelle, $salles)) {
-            $salles[] = $nouvelle;
-            session(['salles' => $salles]);
-        }
-        return redirect()->back()->with('success', 'Salle "' . $nouvelle . '" ajoutée !');
+        return $solos + (int)floor($binomes / 2);
     }
 }
