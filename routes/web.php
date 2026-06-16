@@ -13,9 +13,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 
 // Import
 Route::get('/import', [ImportController::class, 'showForm'])->name('import.form');
-Route::post('/import/students', [ImportController::class, 'importStudents'])->name('import.students');
-Route::post('/import/professors', [ImportController::class, 'importProfessors'])->name('import.professors');
-Route::post('/import/sujets', [ImportController::class, 'importSujets'])->name('import.sujets');
+Route::post('/import/unified', [ImportController::class, 'importUnified'])->name('import.unified');
 Route::post('/import/salles', [ImportController::class, 'saveSalles'])->name('import.salles');
 Route::post('/import/salle/add', [ImportController::class, 'addSalle'])->name('import.salle.add');
 
@@ -48,6 +46,8 @@ Route::get('/export/pv/filiere/{filiere}/{format}', [ExportController::class, 'e
 
 // Export PV individuel
 Route::get('/export/pv/{id}/{format}', [ExportController::class, 'exportPV'])->name('export.pv');
+Route::get('/export/pv/directory', [ExportController::class, 'pvDirectory'])->name('export.pv.directory');
+Route::get('/export/pv/zip/{professorId}', [ExportController::class, 'exportPVZip'])->name('export.pv.zip');
 
 // Gener tout :
 Route::get('/generer-tout', [AffectationController::class, 'genererTout']);

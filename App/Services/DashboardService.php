@@ -8,29 +8,6 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
-    /*
-    |
-    | STAT 1 — Tableau combiné : encadrés + jurys par professeur
-    |
-    |
-    | On utilise une seule requête SQL avec deux LEFT JOIN pour avoir
-    | en une seule fois : le nom du prof, le nb d'étudiants encadrés,
-    | le nb de jurys assistés.
-    |
-    | LEFT JOIN = "relier deux tables, garder tous les profs même s'ils
-    | n'ont pas encore d'étudiants ou de jurys" (retourne 0 au lieu de rien)
-    |
-    | COUNT(DISTINCT s.id) = compter les étudiants UNIQUES du prof
-    | DISTINCT évite de compter deux fois si un étudiant apparaît
-    | dans plusieurs jointures
-    |
-    | AS nb_encadres = donner un nom à la colonne calculée
-    |
-    | GROUP BY p.id = regrouper toutes les lignes du même prof
-    | pour que COUNT() fonctionne prof par prof
-    |
-    | ORDER BY nb_encadres DESC = trier du plus grand au plus petit
-    */
     public function getTableauCombine()
     {
         return DB::table('professors as p')
@@ -46,22 +23,6 @@ class DashboardService
             ->get();
     }
 
-    /*
-    | STAT 2 — Soutenances par filière (pour le diagramme cercle)
-    |
-    | Student::select() = écrire une requête SELECT sur la table students
-    |
-    | 'filiere' = on veut la colonne filière
-    |
-    | DB::raw('count(*) as total') = écrire du SQL pur à l'intérieur
-    | de Laravel. count(*) = compter le nombre de lignes.
-    | "as total" = nommer cette colonne "total" dans le résultat
-    |
-    | ->groupBy('filiere') = regrouper toutes les lignes qui ont
-    | la même filière, pour que count(*) compte par groupe
-    |
-    | ->get() = exécuter la requête et retourner tous les résultats
-    */
     public function getSoutenancesParFiliere()
     {
         return Student::select('filiere', DB::raw('count(*) as total'))
@@ -70,15 +31,6 @@ class DashboardService
             ->get();
     }
 
-    /*
-    | STAT 3 — Chiffres résumés pour les cartes en haut
-    |
-    | ::count() = méthode Eloquent qui fait SELECT COUNT(*) FROM table
-    | Retourne un simple nombre entier
-    |
-    | On retourne un tableau associatif ['clé' => valeur]
-    | pour pouvoir accéder à $stats['etudiants'] dans la vue
-    */
     public function getStats()
     {
          return [
@@ -96,30 +48,28 @@ public function getAnomalies()
 {
     $anomalies = []; // tableau vide au départ — on y ajoute les problèmes trouvés
 
-    // ── ANOMALIE 1 : encadrants avec trop ou trop peu d'étudiants 
-    // On récupère chaque encadrant et son nombre d'étudiants
+    
     $encadrements = DB::table('students')
-        ->select('encadrant_id', DB::raw('COUNT(*) as nb'))
+        ->select('encadrant_id', DB::raw('COUNT(*) as nb_total'),
+                DB::raw('SUM(CASE WHEN binome = 1 THEN 1 ELSE 0 END) as nb_binome'))
         ->whereNotNull('encadrant_id')
         ->groupBy('encadrant_id')
         ->get();
 
     foreach ($encadrements as $enc) {
-        // La règle : entre 3 et 4 étudiants par encadrant
-        if ($enc->nb < 3 || $enc->nb > 4) {
-            // Récupérer le nom du prof concerné
-            $prof = DB::table('professors')
-                ->where('id', $enc->encadrant_id)
-                ->first();
+        // Nombre de groupes = solos + (binômes / 2 arrondi)
+        $nbSolos   = $enc->nb_total - $enc->nb_binome;
+        $nbGroupes = $nbSolos + (int) ceil($enc->nb_binome / 2);
 
-            $nom = $prof ? $prof->nom . ' ' . $prof->prenom : 'Prof ID ' . $enc->encadrant_id;
+        if ($nbGroupes < 3 || $nbGroupes > 4) {
+            $prof = DB::table('professors')->where('id', $enc->encadrant_id)->first();
+            $nom  = $prof ? $prof->nom . ' ' . $prof->prenom : 'Prof ID ' . $enc->encadrant_id;
 
             $anomalies[] = [
                 'type'    => 'encadrement',
-                // warning = orange (hors norme), danger = rouge (grave)
-                'niveau'  => $enc->nb > 4 ? 'danger' : 'warning',
-                'message' => $nom . ' encadre ' . $enc->nb . ' étudiants'
-                           . ($enc->nb > 4 ? ' (max autorisé : 4)' : ' (min requis : 3)'),
+                'niveau'  => $nbGroupes > 4 ? 'danger' : 'warning',
+                'message' => $nom . ' encadre ' . $nbGroupes . ' groupe(s) (étudiants : ' . $enc->nb_total . ')'
+                        . ($nbGroupes > 4 ? ' (max autorisé : 4)' : ' (min requis : 3)'),
             ];
         }
     }
