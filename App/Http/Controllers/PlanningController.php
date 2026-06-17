@@ -127,20 +127,20 @@ class PlanningController extends Controller
             ], 400);
         }
 
-        // Auto-assign encadrants if missing
-        $sansEncadrant = Student::whereNull('encadrant_id')->count();
-        if ($sansEncadrant > 0) {
-            $profs = Professor::all();
-            if ($profs->isEmpty()) {
-                return response()->json([
-                    'error' => 'Aucun professeur trouvé. Veuillez d\'abord importer les professeurs.'
-                ], 400);
-            }
+        // Balance encadrant distribution across all professors
+        $profs = Professor::all();
+        if ($profs->isEmpty()) {
+            return response()->json([
+                'error' => 'Aucun professeur trouvé. Veuillez d\'abord importer les professeurs.'
+            ], 400);
+        }
 
-            $etudiants = Student::whereNull('encadrant_id')->get();
-            foreach ($etudiants as $index => $etudiant) {
+        if ($profs->count() > 0) {
+            // Distribute all students evenly across professors
+            $allStudents = Student::all();
+            foreach ($allStudents as $index => $student) {
                 $profIndex = $index % $profs->count();
-                $etudiant->update(['encadrant_id' => $profs[$profIndex]->id]);
+                $student->update(['encadrant_id' => $profs[$profIndex]->id]);
             }
         }
 

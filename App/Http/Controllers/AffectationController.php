@@ -16,16 +16,6 @@ class AffectationController extends Controller
 {
     public function affecterEncadrants()
     {
-        // Récupérer les étudiants sans encadrant
-        $etudiants = Student::whereNull('encadrant_id')->get();
-
-        if ($etudiants->isEmpty()) {
-            return response()->json([
-                'message' => 'Tous les étudiants ont déjà un encadrant.'
-            ]);
-        }
-
-        // Récupérer tous les professeurs
         $profs = Professor::all();
 
         if ($profs->isEmpty()) {
@@ -34,49 +24,53 @@ class AffectationController extends Controller
             ]);
         }
 
-        // Distribuer équitablement
-        foreach ($etudiants as $index => $etudiant) {
+        $allStudents = Student::all();
+        if ($allStudents->isEmpty()) {
+            return response()->json([
+                'message' => 'Aucun étudiant trouvé.'
+            ]);
+        }
+
+        // Distribute all students evenly across professors
+        foreach ($allStudents as $index => $student) {
             $profIndex = $index % $profs->count();
-            $etudiant->update([
+            $student->update([
                 'encadrant_id' => $profs[$profIndex]->id
             ]);
         }
 
         return response()->json([
             'message'             => 'Encadrants affectés avec succès !',
-            'etudiants_affectés'  => $etudiants->count(),
+            'etudiants_affectés'  => $allStudents->count(),
             'professeurs_utilisés' => $profs->count(),
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
     public function generer(){
-        
-        // verifion combien d'étudiants ont un encadrant
-        $avecEncadrant = Student::whereNotNull('encadrant_id')->count();
-        $sansEncadrant = Student::whereNull('encadrant_id')->count();
 
-        // si des étudiants n'ont pas d'encadrant 
-        if ($sansEncadrant > 0) {
-            $profs = Professor::all();
-            $etudiants = Student::whereNull('encadrant_id')->get();
-            foreach ($etudiants as $index => $etudiant) {
-                $profIndex = $index % $profs->count();
-                $etudiant->update(['encadrant_id' => $profs[$profIndex]->id]);
-            }
-        }
+        $profs = Professor::all();
+        $allStudents = Student::all();
 
-        //on verifier qu'il ya des etudiant dans la BDD
-        $etudiants = Student::with('encadrant')->get();
-
-        if ($etudiants->isEmpty()){
+        if ($allStudents->isEmpty()){
             return response()->json([
                 'message' => 'Aucun étudiant trouvé dans la base de données'
             ]);
         }
 
-        // on créer une soutnance pour chaque étudiant
-        // si elle n'existe pas deja
-        foreach($etudiants as $etudiant){
+        if ($profs->isEmpty()){
+            return response()->json([
+                'message' => 'Aucun professeur trouvé dans la base de données'
+            ]);
+        }
+
+        // Balance encadrant distribution
+        foreach ($allStudents as $index => $student) {
+            $profIndex = $index % $profs->count();
+            $student->update(['encadrant_id' => $profs[$profIndex]->id]);
+        }
+
+        // Create soutenances for students without one
+        foreach($allStudents as $etudiant){
             $dejaExiste = Soutenance::where('student_id', $etudiant->id)->exists();
 
             if(!$dejaExiste){
@@ -90,7 +84,7 @@ class AffectationController extends Controller
             }
         }
 
-        // pour affecter les jurys aux soutenaces sans jury
+        // Assign juries to soutenances without them
         $soutenances = Soutenance::doesntHave('juries')->with('student.encadrant')->get();
 
         $affectees = 0;
@@ -127,7 +121,7 @@ class AffectationController extends Controller
                 Jury::create([
                     'soutenance_id' => $soutenance->id,
                     'professor_id'  => $prof->id,
-                    'role' => $index == 0 ? 'president' : 'examinateur', 
+                    'role' => $index == 0 ? 'president' : 'examinateur',
                 ]);
             }
 
