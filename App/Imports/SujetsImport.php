@@ -28,7 +28,7 @@ class SujetsImport implements ToCollection, WithHeadingRow
             continue;
         }
         $student->nom = $nom;
-        $student->prenom = $nom;
+        $student->prenom = $prenom;
         $student->sujet = $sujet;
         $student->langue = $langue;
         //CASE 1: !BINOME

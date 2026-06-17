@@ -61,15 +61,15 @@ public function getAnomalies()
         $nbSolos   = $enc->nb_total - $enc->nb_binome;
         $nbGroupes = $nbSolos + (int) ceil($enc->nb_binome / 2);
 
-        if ($nbGroupes < 3 || $nbGroupes > 4) {
+        if ($enc->nb_total < 3 || $enc->nb_total > 4) {
             $prof = DB::table('professors')->where('id', $enc->encadrant_id)->first();
             $nom  = $prof ? $prof->nom . ' ' . $prof->prenom : 'Prof ID ' . $enc->encadrant_id;
 
             $anomalies[] = [
                 'type'    => 'encadrement',
-                'niveau'  => $nbGroupes > 4 ? 'danger' : 'warning',
-                'message' => $nom . ' encadre ' . $nbGroupes . ' groupe(s) (étudiants : ' . $enc->nb_total . ')'
-                        . ($nbGroupes > 4 ? ' (max autorisé : 4)' : ' (min requis : 3)'),
+                'niveau'  => $enc->nb_total > 4 ? 'danger' : 'warning',
+                'message' => $nom . ' encadre ' . $enc->nb_total . ' étudiant(s)'
+                        . ($enc->nb_total > 4 ? ' (max autorisé : 4)' : ' (min recommandé : 3)'),
             ];
         }
     }

@@ -69,27 +69,23 @@ class PlanningController extends Controller
 
     public function generateAffectation()
     {
-        Student::query()->update(['encadrant_id' => null]);
-        $studentsByFiliere = Student::all()->groupBy('filiere');
         $profs = Professor::all()->values();
 
         if ($profs->isEmpty()) {
             return response()->json(['error' => 'Aucun professeur trouvé !']);
         }
 
-        foreach ($studentsByFiliere as $filiere => $students) {
-            $i = 0;
-            foreach ($students as $student) {
-                $student->encadrant_id = $profs[$i % count($profs)]->id;
-                $student->save();
-                $i++;
-            }
+        $allStudents = Student::all();
+        if ($allStudents->isEmpty()) {
+            return response()->json(['error' => 'Aucun étudiant trouvé !']);
         }
+
+        Student::query()->update(['encadrant_id' => null]);
+        $this->allocateEncadrants($allStudents, $profs);
 
         return response()->json(['message' => 'Affectation générée avec succès !']);
     }
-
-    public function generatePlanning()
+public function generatePlanning()
     {
         // Validate all required session data exists
         $jours = session('jours_soutenance', []);
@@ -127,26 +123,24 @@ class PlanningController extends Controller
             ], 400);
         }
 
-        // Balance encadrant distribution across all professors
-        $profs = Professor::all();
-        if ($profs->isEmpty()) {
-            return response()->json([
-                'error' => 'Aucun professeur trouvé. Veuillez d\'abord importer les professeurs.'
-            ], 400);
-        }
-
-        if ($profs->count() > 0) {
-            // Distribute all students evenly across professors
-            $allStudents = Student::all();
-            foreach ($allStudents as $index => $student) {
-                $profIndex = $index % $profs->count();
-                $student->update(['encadrant_id' => $profs[$profIndex]->id]);
+        // Auto-assign encadrants if missing
+        $sansEncadrant = Student::whereNull('encadrant_id')->count();
+        if ($sansEncadrant > 0) {
+            $profs = Professor::all();
+            if ($profs->isEmpty()) {
+                return response()->json([
+                    'error' => 'Aucun professeur trouvé. Veuillez d\'abord importer les professeurs.'
+                ], 400);
             }
+
+            $etudiants = Student::whereNull('encadrant_id')->get();
+            $this->allocateEncadrants($etudiants, $profs);
         }
 
         // Vider les anciennes soutenances
         \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         Soutenance::truncate();
+        \App\Models\Jury::truncate();
         \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
     
@@ -252,6 +246,12 @@ class PlanningController extends Controller
         $affectes = 0;
         $erreurs  = [];
 
+        $profs = Professor::all();
+        $juryCounts = [];
+        foreach ($profs as $p) {
+            $juryCounts[$p->id] = 0;
+        }
+
         foreach ($groupes as $index => $groupe) {
 
             if (!isset($creneaux[$index])) {
@@ -279,65 +279,49 @@ class PlanningController extends Controller
 
             // ETAPE 4 : Jury selon la langue
             if ($langue === 'EN') {
+                $profAnglais = $this->selectJuryMembers('Anglais', $profsOccupes, $juryCounts, 1)->first();
 
-                \Log::info('Soutenance EN pour: ' . $groupe['etudiants']->first()->nom);
-                \Log::info('ProfsOccupes: ' . implode(',', $profsOccupes));
+                $excludeForInfo = $profsOccupes;
+                if ($profAnglais) {
+                    $excludeForInfo[] = $profAnglais->id;
+                }
 
-                $profAnglais = Professor::where('discipline', 'Anglais')
-                    ->whereNotIn('id', $profsOccupes)
-                    ->inRandomOrder()
-                    ->first();
-
-                \Log::info('Prof Anglais trouvé: ' . ($profAnglais ? $profAnglais->nom : 'AUCUN'));
-
-                $profInfo = Professor::where('discipline', 'Informatique')
-                    ->whereNotIn('id', $profsOccupes)
-                    ->when($profAnglais, fn($q) => $q->where('id', '!=', $profAnglais->id))
-                    ->inRandomOrder()
-                    ->first();
-
-                \Log::info('Prof Info trouvé: ' . ($profInfo ? $profInfo->nom : 'AUCUN'));
+                $profInfo = $this->selectJuryMembers('Informatique', $excludeForInfo, $juryCounts, 1)->first();
 
                 if (!$profAnglais || !$profInfo) {
-                    \Log::warning('FALLBACK utilisé pour: ' . $groupe['etudiants']->first()->nom);
-                    $jury = Professor::whereNotIn('id', $profsOccupes)
-                        ->inRandomOrder()
-                        ->limit(2)
-                        ->get();
+                    $jury = $this->selectJuryMembersAnyDiscipline($profsOccupes, $juryCounts, 2);
                     if ($jury->count() < 2) {
-                        $erreurs[] = "Pas assez de profs pour soutenance EN : " .
-                            $groupe['etudiants']->first()->nom;
+                        $erreurs[] = "Pas assez de profs pour soutenance EN : " . $groupe['etudiants']->first()->nom;
                         continue;
                     }
                     $jury_id1 = $jury[0]->id;
                     $jury_id2 = $jury[1]->id;
-                    } else {
+                } else {
                     $jury_id1 = $profAnglais->id;
                     $jury_id2 = $profInfo->id;
                 }
             } else {
-
-                $jury = Professor::where('discipline', 'Informatique')
-                    ->whereNotIn('id', $profsOccupes)
-                    ->inRandomOrder()
-                    ->limit(2)
-                    ->get();
+                $jury = $this->selectJuryMembers('Informatique', $profsOccupes, $juryCounts, 2);
 
                 if ($jury->count() < 2) {
-                    $jury = Professor::whereNotIn('id', $profsOccupes)
-                        ->inRandomOrder()
-                        ->limit(2)
-                        ->get();
+                    $jury = $this->selectJuryMembersAnyDiscipline($profsOccupes, $juryCounts, 2);
                 }
 
                 if ($jury->count() < 2) {
-                    $erreurs[] = "Pas assez de profs pour : " .
-                                 $groupe['etudiants']->first()->nom;
+                    $erreurs[] = "Pas assez de profs pour : " . $groupe['etudiants']->first()->nom;
                     continue;
                 }
 
                 $jury_id1 = $jury[0]->id;
                 $jury_id2 = $jury[1]->id;
+            }
+
+            // Track the assignment
+            if ($jury_id1) {
+                $juryCounts[$jury_id1] = ($juryCounts[$jury_id1] ?? 0) + 1;
+            }
+            if ($jury_id2) {
+                $juryCounts[$jury_id2] = ($juryCounts[$jury_id2] ?? 0) + 1;
             }
 
             // ETAPE 5 / Créer la soutenance
@@ -393,22 +377,173 @@ class PlanningController extends Controller
     public function generatePlanningWeb()
     {
         $response = $this->generatePlanning();
-        $data = $response->getData(true);
+        $data = json_decode($response->getContent(), true);
 
         if (isset($data['error'])) {
-            return redirect()->back()->with('error', '❌ ' . $data['error']);
+            return redirect()->back()->with('error', $data['error']);
         }
 
-        $msg = '✅ ' . ($data['soutenances'] ?? 0) . ' soutenances générées ! ';
-        if (($data['binomes'] ?? 0) > 0) {
-            $msg .= '(' . $data['binomes'] . ' binômes)';
-        }
-
+        $msg = $data['message'] ?? 'Planning généré avec succès !';
         if (!empty($data['erreurs'])) {
-            $msg .= ' ⚠️ ' . count($data['erreurs']) . ' erreur(s) détectée(s)';
-            return redirect()->back()->with('warning', $msg)
-                ->with('erreurs_details', $data['erreurs']);
+            $msg .= ' Cependant, certaines erreurs ont été détectées : ' . implode(', ', $data['erreurs']);
+            return redirect()->route('planning.index')->with('warning', $msg);
         }
 
         return redirect()->route('planning.index')->with('success', $msg);
-}}
+    }
+
+    private function allocateEncadrants($students, $profs)
+    {
+        if ($profs->isEmpty() || $students->isEmpty()) {
+            return;
+        }
+
+        // Group students into projects
+        $processedStudentIds = [];
+        $projects = [];
+
+        foreach ($students as $student) {
+            if (in_array($student->id, $processedStudentIds)) {
+                continue;
+            }
+
+            if ($student->binome == 1 && !empty($student->sujet)) {
+                // Find partner
+                $partner = $students->first(function ($s) use ($student, $processedStudentIds) {
+                    return $s->id != $student->id &&
+                           $s->binome == 1 &&
+                           $s->sujet === $student->sujet &&
+                           !in_array($s->id, $processedStudentIds);
+                });
+
+                if ($partner) {
+                    $projects[] = [$student, $partner];
+                    $processedStudentIds[] = $student->id;
+                    $processedStudentIds[] = $partner->id;
+                    continue;
+                }
+            }
+
+            $projects[] = [$student];
+            $processedStudentIds[] = $student->id;
+        }
+
+        // Sort projects: larger projects (binomes) first
+        usort($projects, function ($a, $b) {
+            return count($b) <=> count($a);
+        });
+
+        // Initialize prof student counts based on the database
+        // excluding the students we are assigning right now
+        $studentIds = $students->pluck('id')->toArray();
+        $profCounts = [];
+        foreach ($profs as $prof) {
+            $profCounts[$prof->id] = \App\Models\Student::where('encadrant_id', $prof->id)
+                ->whereNotIn('id', $studentIds)
+                ->count();
+        }
+
+        // Assign each project to the professor with the lowest count who has space
+        foreach ($projects as $project) {
+            $projectSize = count($project);
+
+            // Filter professors with space (current count + project size <= 4)
+            $availableProfs = [];
+            foreach ($profs as $prof) {
+                if ($profCounts[$prof->id] + $projectSize <= 4) {
+                    $availableProfs[] = $prof;
+                }
+            }
+
+            if (!empty($availableProfs)) {
+                // Sort by current count
+                usort($availableProfs, function ($a, $b) use ($profCounts) {
+                    return $profCounts[$a->id] <=> $profCounts[$b->id];
+                });
+                $chosenProf = $availableProfs[0];
+            } else {
+                // Fallback to absolute minimum count
+                $sortedProfs = $profs->sortBy(function ($prof) use ($profCounts) {
+                    return $profCounts[$prof->id];
+                })->values();
+                $chosenProf = $sortedProfs[0];
+            }
+
+            // Save assignment
+            foreach ($project as $student) {
+                $student->update(['encadrant_id' => $chosenProf->id]);
+            }
+            $profCounts[$chosenProf->id] += $projectSize;
+        }
+    }
+
+    private function selectJuryMembers($discipline, $excludeIds, &$juryCounts, $limit = 1)
+    {
+        $candidates = Professor::where('discipline', $discipline)
+            ->whereNotIn('id', $excludeIds)
+            ->get();
+
+        // Sort by current jury count to balance the load
+        $candidates = $candidates->sortBy(function ($p) use ($juryCounts) {
+            return $juryCounts[$p->id] ?? 0;
+        })->values();
+
+        $selected = [];
+        foreach ($candidates as $candidate) {
+            $currentCount = $juryCounts[$candidate->id] ?? 0;
+            if ($currentCount < 4) {
+                $selected[] = $candidate;
+                if (count($selected) == $limit) {
+                    break;
+                }
+            }
+        }
+
+        // Fallback: if we didn't find enough under the limit of 4, take any available candidate (sorted by count)
+        if (count($selected) < $limit) {
+            foreach ($candidates as $candidate) {
+                if (!in_array($candidate, $selected)) {
+                    $selected[] = $candidate;
+                    if (count($selected) == $limit) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return collect($selected);
+    }
+
+    private function selectJuryMembersAnyDiscipline($excludeIds, &$juryCounts, $limit = 2)
+    {
+        $candidates = Professor::whereNotIn('id', $excludeIds)->get();
+
+        $candidates = $candidates->sortBy(function ($p) use ($juryCounts) {
+            return $juryCounts[$p->id] ?? 0;
+        })->values();
+
+        $selected = [];
+        foreach ($candidates as $candidate) {
+            $currentCount = $juryCounts[$candidate->id] ?? 0;
+            if ($currentCount < 4) {
+                $selected[] = $candidate;
+                if (count($selected) == $limit) {
+                    break;
+                }
+            }
+        }
+
+        if (count($selected) < $limit) {
+            foreach ($candidates as $candidate) {
+                if (!in_array($candidate, $selected)) {
+                    $selected[] = $candidate;
+                    if (count($selected) == $limit) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return collect($selected);
+    }
+}

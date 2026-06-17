@@ -52,7 +52,7 @@
     ];
     $dateIndex = 0;
     foreach ($soutenances as $s) {
-        $dateKey = \Carbon\Carbon::parse($s->date_soutenance)->format('d/m/Y');
+        $dateKey = $s->date_soutenance ? \Carbon\Carbon::parse($s->date_soutenance)->format('d/m/Y') : '-';
         if (!isset($dateColors[$dateKey])) {
             $dateColors[$dateKey] = $datePalette[$dateIndex % count($datePalette)];
             $dateIndex++;
@@ -132,7 +132,7 @@
                                 : '';
                     $j2Color = $j2Key ? ($profColors[$j2Key] ?? ['#eeeeee','#333333']) : ['#eeeeee','#333333'];
 
-                    $dateStr   = \Carbon\Carbon::parse($s->date_soutenance)->format('d/m/Y');
+                    $dateStr   = $s->date_soutenance ? \Carbon\Carbon::parse($s->date_soutenance)->format('d/m/Y') : '-';
                     $dateColor = $dateColors[$dateStr] ?? ['#eeeeee','#333333'];
 
                     $fil      = $s->student->filiere ?? '';
@@ -175,7 +175,7 @@
                         {{ $dateStr }}
                     </td>
 
-                    <td>{{ \Carbon\Carbon::parse($s->heure_debut)->format('H:i') ?? '-' }}</td>
+                    <td>{{ $s->heure_debut ? \Carbon\Carbon::parse($s->heure_debut)->format('H:i') : '-' }}</td>
                     <td>{{ $s->salle ?? '-' }}</td>
 
                     {{-- Nom étudiant (couleur filière) --}}

@@ -130,36 +130,7 @@
     </div>
     @endif
 
-    {{-- Affichage des anomalies --}}
-    @if(isset($anomalies) && count(array_filter($anomalies)) > 0)
-    <div style="margin-top: 20px;">
-        <h3>⚠️ Anomalies détectées</h3>
 
-        @foreach($anomalies as $categorie => $erreurs)
-            @if(count($erreurs) > 0)
-                <div style="margin-bottom: 15px;">
-                    <strong>
-                    @if($categorie == 'salles_suffisantes') 🏛️ Salles
-                        @elseif($categorie == 'equilibre') ⚖️ Équilibre
-                        @elseif($categorie == 'chevauchement_salles') 🔴 Chevauchement salles
-                        @elseif($categorie == 'conflits_professeurs') 👨‍🏫 Conflits professeurs
-                        @elseif($categorie == 'temps_repos') ⏱️ Temps de repos
-                    @endif
-                    </strong>
-                    <ul>
-                        @foreach($erreurs as $erreur)
-                            <li style="color: {{ str_starts_with($erreur, '❌') ? 'red' : 'orange' }};">
-                                {{ $erreur }}
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-        @endforeach
-    </div>
-    {{-- @else
-        <p style="color: green; margin-top: 20px;">✅ Aucune anomalie détectée — Planning valide !</p> --}}
-    @endif
     </div>
 
 <script>

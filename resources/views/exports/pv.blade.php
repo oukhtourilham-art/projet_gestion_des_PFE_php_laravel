@@ -1,243 +1,239 @@
+@php
+if (isset($soutenance)) {
+    if (!isset($logo_universite)) {
+        $logoUniversitePath = public_path('images/LogoUniversite.png');
+        $logo_universite = file_exists($logoUniversitePath) ? base64_encode(file_get_contents($logoUniversitePath)) : null;
+    }
+    if (!isset($logo_ensah)) {
+        $logoEnsahPath = public_path('images/LogoEnsah.png');
+        $logo_ensah = file_exists($logoEnsahPath) ? base64_encode(file_get_contents($logoEnsahPath)) : null;
+    }
+    if (!isset($annee_universitaire)) {
+        $annee_universitaire = '2025-2026';
+    }
+    if (!isset($nom_prenom_etudiant)) {
+        $nom_prenom_etudiant = ($soutenance->student->prenom ?? '') . ' ' . ($soutenance->student->nom ?? '');
+        if (isset($soutenance->binome_student_id)) {
+            $binome = \App\Models\Student::find($soutenance->binome_student_id);
+            if ($binome) {
+                $nom_prenom_etudiant .= ' / ' . ($binome->prenom ?? '') . ' ' . ($binome->nom ?? '');
+            }
+        }
+    }
+    if (!isset($filiere)) {
+        $filiere = $soutenance->student->filiere ?? '';
+    }
+    if (!isset($intitule_rapport)) {
+        $intitule_rapport = $soutenance->student->sujet ?? '';
+    }
+    if (!isset($encadrant_interne)) {
+        $encadrant_interne = ($soutenance->student->encadrant->nom ?? '') . ' ' . ($soutenance->student->encadrant->prenom ?? '');
+    }
+    if (!isset($jury_president)) {
+        $jury_president = ($soutenance->student->encadrant->nom ?? '') . ' ' . ($soutenance->student->encadrant->prenom ?? '');
+    }
+    if (!isset($jury_president_court)) {
+        $jury_president_court = $soutenance->student->encadrant->nom ?? '';
+    }
+    if (!isset($jury_rapporteur1)) {
+        $jury_rapporteur1 = isset($soutenance->juries[0]->professor) ? ($soutenance->juries[0]->professor->nom . ' ' . $soutenance->juries[0]->professor->prenom) : '';
+    }
+    if (!isset($jury_rapporteur1_court)) {
+        $jury_rapporteur1_court = isset($soutenance->juries[0]->professor) ? $soutenance->juries[0]->professor->nom : '';
+    }
+    if (!isset($jury_rapporteur2)) {
+        $jury_rapporteur2 = isset($soutenance->juries[1]->professor) ? ($soutenance->juries[1]->professor->nom . ' ' . $soutenance->juries[1]->professor->prenom) : '';
+    }
+    if (!isset($jury_rapporteur2_court)) {
+        $jury_rapporteur2_court = isset($soutenance->juries[1]->professor) ? $soutenance->juries[1]->professor->nom : '';
+    }
+    if (!isset($date_soutenance)) {
+        $date_soutenance = $soutenance->date_soutenance ? \Carbon\Carbon::parse($soutenance->date_soutenance)->format('d/m/Y') : null;
+    }
+}
+@endphp
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>PV — {{ $soutenance->student->prenom }} {{ $soutenance->student->nom }}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>Fiche d'évaluation PFE</title>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* Header */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .header img { width: 80px; height: 80px; object-fit: contain; }
-        .header-center { text-align: center; flex: 1; padding: 0 20px; }
-        .univ-name { font-weight: bold; font-size: 13px; margin: 0; }
-        .univ-sub { font-size: 11px; margin: 2px 0; }
-        .doc-type { font-weight: bold; font-size: 13px; margin: 5px 0; }
-        .doc-year { font-size: 11px; margin: 0; }
-        .header-line { border: 2px solid black; margin: 10px 0; }
+        body {
+            font-family: "Times New Roman", Times, serif;
+            font-size: 12pt;
+            color: #000;
+            background: #fff;
+        }
 
-        /* Champs */
-        .field-row { margin: 8px 0; }
-        .field-label { font-weight: bold; }
-        .field-value { margin-left: 5px; }
-        .field-block { margin: 12px 0; }
-        .field-line { border-bottom: 1px solid black; min-height: 20px; margin-top: 4px; padding: 2px; }
-        .field-sub-row { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
-        .field-line-inline { border-bottom: 1px solid black; flex: 1; min-height: 18px; }
-        .sub-label { font-weight: bold; white-space: nowrap; }
-        .underline { text-decoration: underline; margin-bottom: 4px; }
+        @page { size: A4; margin: 2cm 2.5cm 2cm 2.5cm; }
 
-        /* Jury */
-        .jury-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
-        .jury-role { font-style: italic; color: #444; }
+        .page { width: 100%; }
 
-        /* Notes */
-        .note-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
-        .note-box { border: 1px solid black; width: 60px; height: 22px; display: inline-block; }
+        /* EN-TÊTE */
+        .header-row {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .header-row td { vertical-align: middle; }
+        .header-center { text-align: center; font-size: 11pt; font-weight: bold; }
+        .header-sub { text-align: center; font-size: 10pt; margin-top: 3px; }
 
-        /* Moyenne */
-        .moyenne-box { border: 2px solid black; padding: 8px; margin: 15px 0; text-align: center; }
-        .moyenne-title { font-weight: bold; font-size: 14px; margin: 0 0 5px 0; }
+        /* TITRES */
+        .dept { text-align: center; font-size: 13pt; font-weight: bold; margin: 14px 0 2px 0; }
+        .titre { text-align: center; font-size: 12pt; margin: 2px 0; }
+        .annee { text-align: center; font-size: 12pt; margin: 2px 0 14px 0; }
 
-        /* Signatures */
-        .signatures-section { margin-top: 20px; }
-        .sig-row { display: flex; gap: 30px; margin-top: 10px; }
-        .sig-block { display: flex; flex-direction: column; align-items: center; min-width: 150px; }
-        .sig-name { font-size: 11px; margin-bottom: 30px; }
-        .sig-line { border-bottom: 1px solid black; width: 100%; margin-top: 5px; }
-        ..header {
-    width: 100%;
-    position: relative;
-    text-align: center;
-    margin-bottom: 20px;
-}
+        /* CORPS */
+        .label {
+            font-size: 12pt;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 10px 0 3px 0;
+        }
+        .label-note { font-weight: normal; text-decoration: none; font-style: italic; font-size: 10pt; }
+        .value { font-size: 12pt; margin: 3px 0 8px 18px; }
+        .filiere-line { font-size: 12pt; font-weight: bold; margin: 6px 0 10px 0; }
 
-.logo-left {
-    position: absolute;
-    left: 0;
-    top: 0;
-}
+        /* TABLEAU JURY */
+        .table-jury { width: 100%; border-collapse: collapse; margin: 6px 0 10px 0; }
+        .table-jury td { border: 1px solid #000; padding: 5px 10px; font-size: 12pt; }
 
-.logo-right {
-    position: absolute;
-    right: 0;
-    top: 0;
-}
+        /* NOTES */
+        .note { font-size: 12pt; margin: 4px 0; }
 
-.logo-left img,
-.logo-right img {
-    width: 120px;
-    height: 120px;
-    object-fit: contain;
-}
+        /* TABLEAU MOYENNE */
+        .table-moy { width: 100%; border-collapse: collapse; margin: 10px 0 14px 0; }
+        .table-moy th {
+            border: 1px solid #000; padding: 5px 10px;
+            text-align: center; font-size: 12pt; font-weight: bold;
+        }
+        .table-moy td { border: 1px solid #000; padding: 6px 10px; font-size: 12pt; }
 
-.header-center {
-    padding: 0 100px;
-}
+        /* DATE / SIGNATURES */
+        .date { font-size: 12pt; margin: 14px 0 8px 0; }
+        .sig-title { font-size: 12pt; margin-bottom: 40px; }
+        .table-sig { width: 100%; border-collapse: collapse; }
+        .table-sig td { width: 33.33%; text-align: center; font-size: 12pt; padding: 0 5px; vertical-align: top; }
     </style>
 </head>
 <body>
+<div class="page">
 
-    <!-- Header avec logos -->
-    <div class="header">
+    {{-- EN-TÊTE --}}
+    <table class="header-row">
+        <tr>
+            <td style="width:90px; text-align:left;">
+                @if($logo_universite)
+                    <img src="data:image/png;base64,{{ $logo_universite }}" width="80" alt="">
+                @endif
+            </td>
+            <td class="header-center">
+                UNIVERSITE ABDELMALEK ESSAADI
+                <div class="header-sub">Ecole Nationale des Sciences Appliquées d'Al-Hoceima - Maroc</div>
+            </td>
+            <td style="width:90px; text-align:right;">
+                @if($logo_ensah)
+                    <img src="data:image/png;base64,{{ $logo_ensah }}" width="80" alt="">
+                @endif
+            </td>
+        </tr>
+    </table>
 
-    <!-- Logo gauche -->
-    <div class="logo-left">
-        <img src="{{ public_path('images/LogoUniversite.png') }}" alt="LogoUniversite">
-    </div>
+    {{-- TITRES --}}
+    <p class="dept">Département de Mathématiques et Informatique</p>
+    <p class="titre">Fiche d'évaluation du Projet de Fin d'Étude</p>
+    <p class="annee">Année Universitaire : {{ $annee_universitaire }}</p>
 
-    <!-- Texte centre -->
-    <div class="header-center">
-        <p class="univ-name">UNIVERSITE ABDELMALEK ESSAADI</p>
-        <p class="univ-sub">École Nationale des Sciences Appliquées d'Al-Hoceima</p>
-        <h3 style="margin: 4px 0;">Département Mathématiques Informatique</h3>
-        <p class="doc-type">Fiche d'évaluation du Projet de Fin d'Étude</p>
-        <p class="doc-year">Année Universitaire : 2025-2026</p>
-    </div>
+    {{-- NOM ETUDIANT --}}
+    <p class="label">Nom - Prénom de l'élève ingénieur :</p>
+    <p class="value">• {{ $nom_prenom_etudiant ?? '……………………………………………………………………….' }}</p>
 
-    <!-- Logo droite -->
-    <div class="logo-right">
-        <img src="{{ public_path('images/EnsahLogo.jpg') }}" alt="EnsahLogo">
-    </div>
+    {{-- FILIERE : affiche la filière de l'étudiant soulignée --}}
+    @php
+        $filiereMap = [
+            'DATA' => 'Ingénierie des Données',
+            'GI'   => 'Génie Informatique',
+            'TDIA' => 'Technologies et Développement IA',
+        ];
+        $labels = [];
+        foreach ($filiereMap as $code => $label) {
+            if (isset($filiere) && strtoupper($filiere) === $code) {
+                $labels[] = '<u><strong>' . $label . '</strong></u>';
+            } else {
+                $labels[] = $label;
+            }
+        }
+        // Si filière inconnue, juste afficher le nom brut souligné
+        if (isset($filiere) && !array_key_exists(strtoupper($filiere), $filiereMap)) {
+            $labels = ['<u><strong>' . $filiere . '</strong></u>'];
+        }
+    @endphp
+    <p class="filiere-line">
+        <strong><u>Filière</u> :</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        {!! implode('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;', $labels) !!}
+    </p>
+
+    {{-- INTITULE RAPPORT --}}
+    <p class="label">Intitulé du rapport :</p>
+    <p class="value">• {{ $intitule_rapport ?? '……………………………………………………………………….' }}</p>
+
+    {{-- ENCADRANT INTERNE --}}
+    <p class="label">L'encadrant (e) interne :</p>
+    <p class="value">• Pr.&nbsp;&nbsp;{{ $encadrant_interne ?? '……………………………………………………………………….' }}</p>
+
+    {{-- MEMBRES DU JURY
+         Président = encadrant, Rapporteurs = membres du jury --}}
+    <p class="label">Membres du jury :</p>
+    <table class="table-jury">
+        <tr>
+            <td>Pr.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ $jury_president ?? '…………………………………………………' }}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Président</td>
+        </tr>
+        <tr>
+            <td>
+                Pr.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ $jury_rapporteur1 ?? '…………………………………………………' }}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rapporteur
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                Pr.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ $jury_rapporteur2 ?? '…………………………………………………' }}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rapporteur
+            </td>
+        </tr>
+    </table>
+
+    {{-- NOTES --}}
+    <p class="label">Note du Contenu <span class="label-note">*(En prenant en compte l'appréciation de l'entreprise)*</span></p>
+    <p class="note">C &nbsp;<strong>=</strong>&nbsp; {{ $note_contenu ?? '…………………' }}</p>
+
+    <p class="label">Note du Mémoire</p>
+    <p class="note">M &nbsp;<strong>=&nbsp;&nbsp;</strong> {{ $note_memoire ?? '…………………' }}</p>
+
+    <p class="label">Note de la Soutenance</p>
+    <p class="note">S &nbsp;<strong>= </strong>&nbsp; {{ $note_soutenance ?? '…………………' }}</p>
+
+    {{-- TABLEAU MOYENNE --}}
+    <table class="table-moy">
+        <tr><th>MOYENNE</th></tr>
+        <tr>
+            <td>
+                <strong>Moyenne</strong>&nbsp;&nbsp;&nbsp;= C * 0,5 + M * 0,2 + S * 0,3 &nbsp;=&nbsp;
+                {{ $moyenne ?? '…………………' }}
+            </td>
+        </tr>
+    </table>
+
+    {{-- DATE --}}
+    <p class="date">Le :&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ $date_soutenance ?? '……………………' }}</p>
+
+    {{-- SIGNATURES --}}
+    <p class="sig-title">Signature des membres du jury :</p>
+    <table class="table-sig">
+        <tr>
+            <td>Pr.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ $jury_president_court ?? '……………………' }}</td>
+            <td>Pr.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ $jury_rapporteur1_court ?? '………………………' }}</td>
+            <td>Pr.&nbsp;&nbsp;&nbsp;&nbsp;{{ $jury_rapporteur2_court ?? '…………………………' }}</td>
+        </tr>
+    </table>
 
 </div>
-
-    <hr class="header-line">
-
-    <!-- Nom étudiant -->
-    <div class="field-row">
-        <span class="field-label">Nom - Prénom de l'élève ingénieur :</span>
-        <span class="field-value">{{ $soutenance->student->prenom }} {{ $soutenance->student->nom }}</span>
-    </div>
-
-    <!-- Filière -->
-    <div class="field-row">
-        <span class="field-label">Filière :</span>
-        <span class="field-value">{{ $soutenance->student->filiere }}</span>
-    </div>
-
-    <!-- Intitulé du rapport -->
-    <div class="field-block">
-        <p class="field-label underline">Intitulé du rapport :</p>
-        <div class="field-line">{{ $soutenance->sujet ?? '' }}</div>
-    </div>
-
-    <!-- Encadrant -->
-    <div class="field-block">
-        <p class="field-label underline">L'encadrant(e) interne :</p>
-        <div class="field-sub-row">
-            <span class="sub-label">Pr.</span>
-    
-            <span class="field-line-inline">
-                {{ $soutenance->student->encadrant->nom ?? '' }}
-                {{ $soutenance->student->encadrant->prenom ?? '' }}
-            </span>
-        </div>
-    </div>
-
-    <!-- Membres du jury -->
-    <div class="field-block">
-        <p class="field-label underline">Membres du jury :</p>
-
-        {{-- Encadrant ajouté comme 1er membre --}}
-        <div class="jury-row">
-            <span>–</span>
-            <span class="sub-label">Pr.</span>
-            <span class="field-line-inline">
-                {{ $soutenance->student->encadrant->nom ?? '' }}
-                {{ $soutenance->student->encadrant->prenom ?? '' }}
-            </span>
-            <span class="jury-role">(Encadrant)</span>
-        </div>
-
-        {{-- Les 2 membres du jury --}}
-        @foreach($soutenance->juries as $i => $j)
-        <div class="jury-row">
-            <span>–</span>
-            <span class="sub-label">Pr.</span>
-            <span class="field-line-inline">
-                {{ $j->professor->nom ?? '' }}
-                {{ $j->professor->prenom ?? '' }}
-            </span>
-            <span class="jury-role">{{ $i === 0 ? '(Président)' : '(Rapporteur)' }}</span>
-        </div>
-        @endforeach
-    </div>
-
-    <!-- Note du Contenu -->
-    <div class="field-block">
-        <p class="field-label underline">
-            Note du Contenu
-            <span style="font-weight: normal; font-style: italic;">(En prenant en compte l'appréciation de l'entreprise)</span>
-        </p>
-        <div class="note-row">
-            <span class="sub-label">C =</span>
-            <span class="note-box"></span>
-        </div>
-    </div>
-
-    <!-- Note du Mémoire -->
-    <div class="field-block">
-        <p class="field-label underline">Note du Mémoire</p>
-        <div class="note-row">
-            <span class="sub-label">M =</span>
-            <span class="note-box"></span>
-        </div>
-    </div>
-
-    <!-- Note de la Soutenance -->
-    <div class="field-block">
-        <p class="field-label underline">Note de la Soutenance</p>
-        <div class="note-row">
-            <span class="sub-label">S =</span>
-            <span class="note-box"></span>
-        </div>
-    </div>
-
-    <!-- Moyenne -->
-    <div class="moyenne-box">
-        <p class="moyenne-title">MOYENNE</p>
-        <p>Moyenne = C × 0,5 + M × 0,2 + S × 0,3 = ___________</p>
-    </div>
-
-    <!-- Date et signatures -->
-    <div class="signatures-section">
-        <div class="field-row">
-            <span class="field-label">Le :</span>
-            <span style="margin-left: 5px;">
-                {{ $soutenance->date_soutenance ? \Carbon\Carbon::parse($soutenance->date_soutenance)->format('d/m/Y') : '___/___/______' }}
-            </span>
-        </div>
-
-        <p class="field-label" style="margin-top: 15px;">Signature des membres du jury :</p>
-
-        {{--3 signatures : encadrant + 2 jurys --}}
-        <div class="sig-row">
-
-            {{-- Encadrant --}}
-            <div class="sig-block">
-                <span class="sig-name">
-                    Pr. {{ $soutenance->student->encadrant->nom ?? '' }}
-                    {{ $soutenance->student->encadrant->prenom ?? '' }}
-                    <br><small>(Encadrant)</small>
-                </span>
-                <div class="sig-line"></div>
-            </div>
-
-            {{-- 2 membres jury --}}
-            @foreach($soutenance->juries as $i => $j)
-            <div class="sig-block">
-                <span class="sig-name">
-                    Pr. {{ $j->professor->nom ?? '' }}
-                    {{ $j->professor->prenom ?? '' }}
-                    <br><small>{{ $i === 0 ? '(Président)' : '(Rapporteur)' }}</small>
-                </span>
-                <div class="sig-line"></div>
-            </div>
-            @endforeach
-
-        </div>
-    </div>
-
 </body>
 </html>

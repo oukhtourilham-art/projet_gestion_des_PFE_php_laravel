@@ -411,4 +411,115 @@ class ExportController extends Controller
             'Content-Type' => 'application/zip',
         ])->deleteFileAfterSend(true);
     }
+
+    // Export ZIP of all PVs for a filiere (PDF or Word)
+    public function exportPVFiliere($filiere, $format = 'pdf')
+    {
+        $soutenances = Soutenance::whereHas('student', function ($query) use ($filiere) {
+            $query->where('filiere', $filiere);
+        })->with([
+            'student.encadrant',
+            'juries.professor',
+        ])->get();
+
+        if ($soutenances->isEmpty()) {
+            return redirect()->back()->with('error', 'Aucune soutenance trouvée pour la filière ' . $filiere);
+        }
+
+        $zipName = 'PV_' . strtoupper($filiere) . '_' . strtoupper($format) . '.zip';
+        $zipPath = tempnam(sys_get_temp_dir(), 'pv_filiere_zip_') . '.zip';
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            abort(500, 'Impossible de créer le fichier ZIP.');
+        }
+
+        $tempFiles = [];
+
+        foreach ($soutenances as $soutenance) {
+            $nom = $soutenance->student->nom ?? 'etudiant';
+            $prenom = $soutenance->student->prenom ?? '';
+            $filename = 'PV_' . strtoupper($nom) . '_' . strtoupper($prenom);
+
+            if ($format == 'pdf') {
+                $pdf = Pdf::loadView('exports.pv', compact('soutenance'))
+                          ->setPaper('a4', 'portrait');
+                $pdfContent = $pdf->output();
+                $zip->addFromString($filename . '.pdf', $pdfContent);
+            } else {
+                // Word format (docx)
+                $phpWord = new \PhpOffice\PhpWord\PhpWord();
+                $phpWord->setDefaultFontName('Arial');
+                $phpWord->setDefaultFontSize(11);
+
+                $section = $phpWord->addSection([
+                    'marginTop'    => 600,
+                    'marginBottom' => 600,
+                    'marginLeft'   => 800,
+                    'marginRight'  => 800,
+                ]);
+
+                $encadrant = ($soutenance->student->encadrant->nom ?? '') . ' ' . ($soutenance->student->encadrant->prenom ?? '');
+
+                $section->addText('UNIVERSITE ABDELMALEK ESSAADI', ['bold' => true, 'size' => 13], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
+                $section->addText('École Nationale des Sciences Appliquées d\'Al-Hoceima', ['size' => 11], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
+                $section->addText('Fiche d\'évaluation du Projet de Fin d\'Étude', ['bold' => true, 'size' => 13], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER, 'spaceAfter' => 200]);
+                $section->addText('Année Universitaire : 2025-2026', ['size' => 11], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER, 'spaceAfter' => 300]);
+
+                $section->addText('Nom - Prénom : ' . ($soutenance->student->prenom ?? '') . ' ' . ($soutenance->student->nom ?? ''), ['size' => 11]);
+                $section->addText('Filière : ' . ($soutenance->student->filiere ?? ''), ['size' => 11]);
+                $section->addText(' ', ['size' => 11]);
+
+                $section->addText('L\'encadrant(e) interne :', ['bold' => true, 'size' => 11]);
+                $section->addText('Pr. ' . $encadrant, ['size' => 11]);
+                $section->addText(' ', ['size' => 11]);
+
+                $section->addText('Membres du jury :', ['bold' => true, 'size' => 11]);
+                $section->addText('– Pr. ' . $encadrant . ' (Encadrant)', ['size' => 11]);
+                foreach ($soutenance->juries as $i => $j) {
+                    $role = $i === 0 ? 'Président' : 'Rapporteur';
+                    $section->addText('– Pr. ' . ($j->professor->nom ?? '') . ' ' . ($j->professor->prenom ?? '') . ' (' . $role . ')', ['size' => 11]);
+                }
+
+                $section->addText(' ', ['size' => 11]);
+                $section->addText('Note du Contenu (C) = ___________', ['size' => 11]);
+                $section->addText('Note du Mémoire (M) = ___________', ['size' => 11]);
+                $section->addText('Note de la Soutenance (S) = ___________', ['size' => 11]);
+                $section->addText(' ', ['size' => 11]);
+                $section->addText('MOYENNE = C × 0,5 + M × 0,2 + S × 0,3 = ___________', ['bold' => true, 'size' => 12]);
+
+                $section->addText(' ', ['size' => 11]);
+                $date = $soutenance->date_soutenance
+                    ? \Carbon\Carbon::parse($soutenance->date_soutenance)->format('d/m/Y')
+                    : '___/___/______';
+                $section->addText('Le : ' . $date, ['size' => 11]);
+                $section->addText(' ', ['size' => 11]);
+
+                $section->addText('Signature des membres du jury :', ['bold' => true, 'size' => 11]);
+                $section->addText('Pr. ' . $encadrant . ' (Encadrant)' . str_repeat(' ', 20) . '________________', ['size' => 11]);
+                foreach ($soutenance->juries as $i => $j) {
+                    $role = $i === 0 ? 'Président' : 'Rapporteur';
+                    $section->addText('Pr. ' . ($j->professor->nom ?? '') . ' ' . ($j->professor->prenom ?? '') . ' (' . $role . ')' . str_repeat(' ', 20) . '________________', ['size' => 11]);
+                }
+
+                $tempFile = tempnam(sys_get_temp_dir(), 'pv_word_') . '.docx';
+                \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007')->save($tempFile);
+                $zip->addFile($tempFile, $filename . '.docx');
+                $tempFiles[] = $tempFile;
+            }
+        }
+
+        $zip->close();
+
+        // Clean up temporary Word files
+        foreach ($tempFiles as $tempFile) {
+            if (file_exists($tempFile)) {
+                @unlink($tempFile);
+            }
+        }
+
+        return response()->download($zipPath, $zipName, [
+            'Content-Type' => 'application/zip',
+        ])->deleteFileAfterSend(true);
+    }
 }

@@ -194,7 +194,7 @@
                     @if($nom2)<span class="etu-binome">+ {{ $nom2 }}</span>@endif
                 </td>
                 <td><span class="badge badge-filiere">{{ $filiere ?: '—' }}</span></td>
-                <td>{{ \Carbon\Carbon::parse($s->date)->format('d/m/Y') }}</td>
+                <td>{{ $s->date ? \Carbon\Carbon::parse($s->date)->format('d/m/Y') : '—' }}</td>
                 <td><span class="badge badge-heure">{{ $creneau }}</span></td>
                 <td><span class="badge badge-salle">{{ $s->salle }}</span></td>
                 <td class="td-jury">{{ $jury->get(0)?->professor->nom ?? '—' }}</td>

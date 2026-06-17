@@ -23,6 +23,24 @@
     </header>
 
     <main>
+        @if(session('success'))
+            <div style="padding: 10px; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 4px; margin-bottom: 20px;">
+                ✅ {{ session('success') }}
+            </div>
+        @endif
+
+        @if(session('warning'))
+            <div style="padding: 10px; background: #fffde7; color: #f57f17; border: 1px solid #fff59d; border-radius: 4px; margin-bottom: 20px;">
+                ⚠️ {{ session('warning') }}
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div style="padding: 10px; background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; border-radius: 4px; margin-bottom: 20px;">
+                ❌ {{ session('error') }}
+            </div>
+        @endif
+
         @yield('content')
     </main>
 

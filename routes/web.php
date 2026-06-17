@@ -45,12 +45,13 @@ Route::get('/export/word', [ExportController::class, 'exportWord'])->name('expor
 Route::get('/export/affectation/pdf', [ExportController::class, 'exportAffectationPDF'])->name('export.affectation.pdf');
 Route::get('/export/affectation/word', [ExportController::class, 'exportAffectationWord'])->name('export.affectation.word');
 
-Route::get('/export/pv/filiere/{filiere}/{format}', [ExportController::class, 'exportPVFiliere'])->name('export.pv.filiere');
-
-// Export PV individuel
-Route::get('/export/pv/{id}/{format}', [ExportController::class, 'exportPV'])->name('export.pv');
+// Export PV individuel - SPECIFIC routes FIRST
 Route::get('/export/pv/directory', [ExportController::class, 'pvDirectory'])->name('export.pv.directory');
 Route::get('/export/pv/zip/{professorId}', [ExportController::class, 'exportPVZip'])->name('export.pv.zip');
+Route::get('/export/pv/filiere/{filiere}/{format}', [ExportController::class, 'exportPVFiliere'])->name('export.pv.filiere');
+
+// Generic route LAST (always after specific ones)
+Route::get('/export/pv/{id}/{format}', [ExportController::class, 'exportPV'])->name('export.pv');
 
 // Gener tout :
 Route::get('/generer-tout', [AffectationController::class, 'genererTout']);
