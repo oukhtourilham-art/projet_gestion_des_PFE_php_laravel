@@ -26,11 +26,14 @@ Route::get('/verifier-planning', [VerificationController::class, 'verifier']);
 
 // Planning
 Route::get('/planning', function () {
-    $soutenances = \App\Models\Soutenance::with(['student', 'juries.professor'])->get();
+    $soutenances = \App\Models\Soutenance::with([
+        'student.encadrant',
+        'juries.professor'
+    ])->get();
     return view('planning', compact('soutenances'));
 })->name('planning.index');
 
-Route::get('/planning/generate', [PlanningController::class, 'generatePlanning'])->name('planning.generate');
+Route::get('/planning/generate', [PlanningController::class, 'generatePlanningWeb'])->name('planning.generate');
 Route::post('/planning/dates', [PlanningController::class, 'saveDates'])->name('planning.dates');
 
 // Export Planning
