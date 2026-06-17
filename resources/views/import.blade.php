@@ -29,7 +29,7 @@
 
     @if($filieres->isNotEmpty())
     <p style="color:#555; font-size:13px;">
-        📂 Filières actuellement en base :
+         Filières actuellement en base :
         @foreach($filieres as $f)
             <strong>{{ $f }}</strong>{{ !$loop->last ? ', ' : '' }}
         @endforeach
@@ -41,7 +41,7 @@
         <label>Fichier Excel (.xlsx) :</label><br>
         <input type="file" name="fichier" accept=".xlsx,.xls" required style="margin:6px 0;">
         <br><br>
-        <button type="submit">📥 Importer</button>
+        <button type="submit"> Importer</button>
     </form>
     <hr>
 
@@ -155,6 +155,20 @@
     <p><strong>Salles sélectionnées :</strong>
         {{ implode(', ', session('salles')) }}
     </p>
+
+    <div style="margin-top:20px; padding:15px; background:#e8f5e9; border-radius:8px; border-left:4px solid #4caf50;">
+        <strong style="color:#2e7d32;">✅ Configuration complète!</strong>
+        <p style="margin:10px 0 0 0; color:#555; font-size:13px;">
+            Vous avez maintenant configuré les dates, les créneaux et les salles.
+        </p>
+        <a href="{{ route('planning.generate') }}"
+           style="display:inline-block; margin-top:10px; padding:10px 20px;
+                  background:#4caf50; color:white; text-decoration:none;
+                  border-radius:4px; font-weight:bold;"
+           onclick="return confirm('Générer le planning avec la configuration actuelle ?')">
+             Générer le Planning
+        </a>
+    </div>
     @endif
 
     <p id="info-salles" style="font-size:13px; margin-top:5px;"></p>

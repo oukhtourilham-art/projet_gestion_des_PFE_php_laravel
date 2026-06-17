@@ -91,16 +91,69 @@ class PlanningController extends Controller
 
     public function generatePlanning()
     {
+        // Validate all required session data exists
+        $jours = session('jours_soutenance', []);
+        $timeSlots = session('time_slots', []);
+        $salles = session('salles', []);
+        $nbCreneaux = session('nb_creneaux');
+
+        if (empty($jours)) {
+            return response()->json([
+                'error' => 'Dates de soutenance non configurées. Veuillez d\'abord enregistrer les dates.'
+            ], 400);
+        }
+
+        if ($nbCreneaux === null || $nbCreneaux == 0) {
+            return response()->json([
+                'error' => 'Nombre de créneaux non configuré. Veuillez d\'abord configurer les dates avec des créneaux.'
+            ], 400);
+        }
+
+        if (empty($timeSlots)) {
+            return response()->json([
+                'error' => 'Créneaux horaires non calculés. Veuillez d\'abord configurer les dates.'
+            ], 400);
+        }
+
+        if (empty($salles)) {
+            return response()->json([
+                'error' => 'Salles non configurées. Veuillez d\'abord sélectionner les salles.'
+            ], 400);
+        }
+
+        if (\App\Models\Student::count() == 0) {
+            return response()->json([
+                'error' => 'Aucun étudiant trouvé. Veuillez d\'abord importer les étudiants.'
+            ], 400);
+        }
+
+        // Auto-assign encadrants if missing
+        $sansEncadrant = Student::whereNull('encadrant_id')->count();
+        if ($sansEncadrant > 0) {
+            $profs = Professor::all();
+            if ($profs->isEmpty()) {
+                return response()->json([
+                    'error' => 'Aucun professeur trouvé. Veuillez d\'abord importer les professeurs.'
+                ], 400);
+            }
+
+            $etudiants = Student::whereNull('encadrant_id')->get();
+            foreach ($etudiants as $index => $etudiant) {
+                $profIndex = $index % $profs->count();
+                $etudiant->update(['encadrant_id' => $profs[$profIndex]->id]);
+            }
+        }
+
         // Vider les anciennes soutenances
         \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         Soutenance::truncate();
         \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        // ETAPE 1 : Mélanger et regrouper les binômes
+    
         $binomesTraites = [];
         $groupes = collect();
 
-        // Filières dynamiques — pas de liste hardcodée
+    
         $filieres = Student::whereNotNull('filiere')
             ->distinct()
             ->pluck('filiere')
@@ -122,8 +175,7 @@ class PlanningController extends Controller
         }
 
         foreach ($studentsMelanges as $student) {
-
-                if (in_array($student->id, $binomesTraites)) continue;
+            if (in_array($student->id, $binomesTraites)) continue;
 
                 // Vérifier binôme avec == 1
                 if ($student->binome == 1 && !empty($student->sujet)) {
@@ -143,13 +195,13 @@ class PlanningController extends Controller
                         $binomesTraites[] = $student->id;
                         $binomesTraites[] = $partner->id;
 
-                        // LOG pour vérifier
+                        // LOG pour verifier
                         \Log::info('Binôme détecté: ' . $student->nom . ' + ' . $partner->nom);
                         continue;
                     }
                 }
 
-                // Étudiant seul
+                // etudiant seul
                 $groupes->push([
                     'etudiants'    => collect([$student]),
                     'langue'       => $student->langue ?? 'FR',
@@ -158,9 +210,7 @@ class PlanningController extends Controller
                 $binomesTraites[] = $student->id;
         }
 
-        
-
-        // ETAPE 2 : Créneaux
+        // ETAPE 2 : Creneaux
         $timeSlots = session('time_slots', [
             ["debut" => "09:00", "fin" => "10:00"],
             ["debut" => "11:00", "fin" => "12:00"],
@@ -198,7 +248,7 @@ class PlanningController extends Controller
             }
         }
 
-        // ETAPE 3 : Assigner un créneau à chaque groupe
+        // ETAPE 3 : Assigner un creneau pour chaque groupe
         $affectes = 0;
         $erreurs  = [];
 
@@ -214,7 +264,7 @@ class PlanningController extends Controller
             $encadrant_id = $groupe['encadrant_id'];
             $langue       = strtoupper($groupe['langue'] ?? 'FR');
 
-            // Profs occupés dans ce créneau
+            // Profs occupees dans ce creneau
             $soutenancesExistantes = Soutenance::where('date_soutenance', $creneau['date'])
                 ->where('heure_debut', $creneau['debut'])
                 ->get();
@@ -296,7 +346,7 @@ class PlanningController extends Controller
                          ? $groupe['etudiants']->last()
                          : null;
 
-            Soutenance::create([
+            $soutenance = Soutenance::create([
                 "student_id"        => $etudiant1->id,
                 "binome_student_id" => $etudiant2?->id,
                 "date_soutenance"   => $creneau["date"],
@@ -307,6 +357,23 @@ class PlanningController extends Controller
                 "jury_id1"          => $jury_id1,
                 "jury_id2"          => $jury_id2,
             ]);
+
+            // Create Jury records for the planning view
+            if ($jury_id1) {
+                \App\Models\Jury::create([
+                    'soutenance_id' => $soutenance->id,
+                    'professor_id'  => $jury_id1,
+                    'role'          => 'president',
+                ]);
+            }
+
+            if ($jury_id2) {
+                \App\Models\Jury::create([
+                    'soutenance_id' => $soutenance->id,
+                    'professor_id'  => $jury_id2,
+                    'role'          => 'examinateur',
+                ]);
+            }
 
             $affectes++;
         }
@@ -322,4 +389,26 @@ class PlanningController extends Controller
             'erreurs'         => $erreurs,
         ]);
     }
-}
+
+    public function generatePlanningWeb()
+    {
+        $response = $this->generatePlanning();
+        $data = $response->getData(true);
+
+        if (isset($data['error'])) {
+            return redirect()->back()->with('error', '❌ ' . $data['error']);
+        }
+
+        $msg = '✅ ' . ($data['soutenances'] ?? 0) . ' soutenances générées ! ';
+        if (($data['binomes'] ?? 0) > 0) {
+            $msg .= '(' . $data['binomes'] . ' binômes)';
+        }
+
+        if (!empty($data['erreurs'])) {
+            $msg .= ' ⚠️ ' . count($data['erreurs']) . ' erreur(s) détectée(s)';
+            return redirect()->back()->with('warning', $msg)
+                ->with('erreurs_details', $data['erreurs']);
+        }
+
+        return redirect()->route('planning.index')->with('success', $msg);
+}}
