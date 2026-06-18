@@ -16,6 +16,16 @@ class AffectationController extends Controller
 {
     public function affecterEncadrants()
     {
+        // Récupérer les étudiants sans encadrant
+        $etudiants = Student::whereNull('encadrant_id')->get();
+
+        if ($etudiants->isEmpty()) {
+            return response()->json([
+                'message' => 'Tous les étudiants ont déjà un encadrant.'
+            ]);
+        }
+
+        // Récupérer tous les professeurs
         $profs = Professor::all();
 
         if ($profs->isEmpty()) {
@@ -24,43 +34,49 @@ class AffectationController extends Controller
             ]);
         }
 
-        $allStudents = Student::all();
-        if ($allStudents->isEmpty()) {
-            return response()->json([
-                'message' => 'Aucun étudiant trouvé.'
+        // Distribuer équitablement
+        foreach ($etudiants as $index => $etudiant) {
+            $profIndex = $index % $profs->count();
+            $etudiant->update([
+                'encadrant_id' => $profs[$profIndex]->id
             ]);
         }
 
-        $this->allocateEncadrants($allStudents, $profs);
-
         return response()->json([
             'message'             => 'Encadrants affectés avec succès !',
-            'etudiants_affectés'  => $allStudents->count(),
+            'etudiants_affectés'  => $etudiants->count(),
             'professeurs_utilisés' => $profs->count(),
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
     public function generer(){
+        
+        // verifion combien d'étudiants ont un encadrant
+        $avecEncadrant = Student::whereNotNull('encadrant_id')->count();
+        $sansEncadrant = Student::whereNull('encadrant_id')->count();
 
-        $profs = Professor::all();
-        $allStudents = Student::all();
+        // si des étudiants n'ont pas d'encadrant 
+        if ($sansEncadrant > 0) {
+            $profs = Professor::all();
+            $etudiants = Student::whereNull('encadrant_id')->get();
+            foreach ($etudiants as $index => $etudiant) {
+                $profIndex = $index % $profs->count();
+                $etudiant->update(['encadrant_id' => $profs[$profIndex]->id]);
+            }
+        }
 
-        if ($allStudents->isEmpty()){
+        //on verifier qu'il ya des etudiant dans la BDD
+        $etudiants = Student::with('encadrant')->get();
+
+        if ($etudiants->isEmpty()){
             return response()->json([
                 'message' => 'Aucun étudiant trouvé dans la base de données'
             ]);
         }
 
-        if ($profs->isEmpty()){
-            return response()->json([
-                'message' => 'Aucun professeur trouvé dans la base de données'
-            ]);
-        }
-
-        $this->allocateEncadrants($allStudents, $profs);
-
-        // Create soutenances for students without one
-        foreach($allStudents as $etudiant){
+        // on créer une soutnance pour chaque étudiant
+        // si elle n'existe pas deja
+        foreach($etudiants as $etudiant){
             $dejaExiste = Soutenance::where('student_id', $etudiant->id)->exists();
 
             if(!$dejaExiste){
@@ -74,7 +90,7 @@ class AffectationController extends Controller
             }
         }
 
-        // Assign juries to soutenances without them
+        // pour affecter les jurys aux soutenaces sans jury
         $soutenances = Soutenance::doesntHave('juries')->with('student.encadrant')->get();
 
         $affectees = 0;
@@ -111,7 +127,7 @@ class AffectationController extends Controller
                 Jury::create([
                     'soutenance_id' => $soutenance->id,
                     'professor_id'  => $prof->id,
-                    'role' => $index == 0 ? 'president' : 'examinateur',
+                    'role' => $index == 0 ? 'president' : 'examinateur', 
                 ]);
             }
 
@@ -140,90 +156,5 @@ class AffectationController extends Controller
             'etudiants' => \App\Models\Student::count(),
             'soutenances' => \App\Models\Soutenance::count(),
         ]);
-    }
-
-    private function allocateEncadrants($students, $profs)
-    {
-        if ($profs->isEmpty() || $students->isEmpty()) {
-            return;
-        }
-
-        // Group students into projects
-        $processedStudentIds = [];
-        $projects = [];
-
-        foreach ($students as $student) {
-            if (in_array($student->id, $processedStudentIds)) {
-                continue;
-            }
-
-            if ($student->binome == 1 && !empty($student->sujet)) {
-                // Find partner
-                $partner = $students->first(function ($s) use ($student, $processedStudentIds) {
-                    return $s->id != $student->id &&
-                           $s->binome == 1 &&
-                           $s->sujet === $student->sujet &&
-                           !in_array($s->id, $processedStudentIds);
-                });
-
-                if ($partner) {
-                    $projects[] = [$student, $partner];
-                    $processedStudentIds[] = $student->id;
-                    $processedStudentIds[] = $partner->id;
-                    continue;
-                }
-            }
-
-            $projects[] = [$student];
-            $processedStudentIds[] = $student->id;
-        }
-
-        // Sort projects: larger projects (binomes) first
-        usort($projects, function ($a, $b) {
-            return count($b) <=> count($a);
-        });
-
-        // Initialize prof student counts based on the database
-        // excluding the students we are assigning right now
-        $studentIds = $students->pluck('id')->toArray();
-        $profCounts = [];
-        foreach ($profs as $prof) {
-            $profCounts[$prof->id] = \App\Models\Student::where('encadrant_id', $prof->id)
-                ->whereNotIn('id', $studentIds)
-                ->count();
-        }
-
-        // Assign each project to the professor with the lowest count who has space
-        foreach ($projects as $project) {
-            $projectSize = count($project);
-
-            // Filter professors with space (current count + project size <= 4)
-            $availableProfs = [];
-            foreach ($profs as $prof) {
-                if ($profCounts[$prof->id] + $projectSize <= 4) {
-                    $availableProfs[] = $prof;
-                }
-            }
-
-            if (!empty($availableProfs)) {
-                // Sort by current count
-                usort($availableProfs, function ($a, $b) use ($profCounts) {
-                    return $profCounts[$a->id] <=> $profCounts[$b->id];
-                });
-                $chosenProf = $availableProfs[0];
-            } else {
-                // Fallback to absolute minimum count
-                $sortedProfs = $profs->sortBy(function ($prof) use ($profCounts) {
-                    return $profCounts[$prof->id];
-                })->values();
-                $chosenProf = $sortedProfs[0];
-            }
-
-            // Save assignment
-            foreach ($project as $student) {
-                $student->update(['encadrant_id' => $chosenProf->id]);
-            }
-            $profCounts[$chosenProf->id] += $projectSize;
-        }
     }
 }
